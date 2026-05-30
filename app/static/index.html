@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Netlist Checker — Automated DRC for KiCad</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:         #0a0a0a;
+      --bg2:        #0d0d0d;
+      --surface:    rgba(255,255,255,0.04);
+      --surface2:   rgba(255,255,255,0.07);
+      --border:     rgba(255,255,255,0.08);
+      --border2:    rgba(255,255,255,0.14);
+      --text:       #f1f1f3;
+      --text2:      #a1a1aa;
+      --text3:      #52525b;
+      --accent:     #6366f1;
+      --accent2:    #818cf8;
+      --aglow:      rgba(99,102,241,0.28);
+      --cyan:       #06b6d4;
+      --green:      #22c55e;
+      --red:        #ef4444;
+      --yellow:     #eab308;
+      --nav-h:      64px;
+      --r:          12px;
+      --rl:         20px;
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 15px; line-height: 1.6; overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+    ::selection { background: rgba(99,102,241,0.3); }
+    a { color: inherit; }
+    .ic { font-family: 'SF Mono','Fira Code',monospace; font-size: .875em; background: rgba(255,255,255,0.07); padding: 1px 6px; border-radius: 4px; }
+
+    /* ── Background orbs ── */
+    .bg-orbs { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+    .bg-orb   { position: absolute; border-radius: 50%; filter: blur(100px); will-change: transform; }
+    .bg-orb-1 { width: 700px; height: 700px; background: var(--accent); top: -250px; left: -200px; opacity: .10; animation: orb1 22s ease-in-out infinite alternate; }
+    .bg-orb-2 { width: 600px; height: 600px; background: var(--cyan);   bottom: -150px; right: -150px; opacity: .08; animation: orb2 28s ease-in-out infinite alternate; }
+    .bg-orb-3 { width: 500px; height: 500px; background: #a855f7;        top: 40%; left: 55%;          opacity: .06; animation: orb3 18s ease-in-out infinite alternate; }
+    @keyframes orb1 { to { transform: translate(120px,100px) scale(1.15); } }
+    @keyframes orb2 { to { transform: translate(-80px,-70px) scale(1.1);  } }
+    @keyframes orb3 { to { transform: translate(-70px,50px)  scale(.88);  } }
+
+    /* ── Nav ── */
+    .nav {
+      position: fixed; top: 0; left: 0; right: 0; height: var(--nav-h); z-index: 100;
+      display: flex; align-items: center; padding: 0 32px;
+      border-bottom: 1px solid transparent; transition: background .3s, border-color .3s;
+    }
+    .nav.scrolled {
+      background: rgba(10,10,10,.82);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-color: var(--border);
+    }
+    .nav-inner { max-width: 1200px; width: 100%; margin: 0 auto; display: flex; align-items: center; }
+    .nav-logo  { display: flex; align-items: center; gap: 10px; text-decoration: none; flex-shrink: 0; cursor: pointer; }
+    .logo-mark { width: 32px; height: 32px; background: linear-gradient(135deg,var(--accent),#a855f7); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; color: #fff; letter-spacing: -.5px; flex-shrink: 0; }
+    .logo-text { font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: -.3px; }
+    .nav-links { display: flex; align-items: center; gap: 2px; margin: 0 auto; list-style: none; }
+    .nav-links a {
+      text-decoration: none; color: var(--text2); font-size: 14px; font-weight: 500;
+      padding: 6px 14px; border-radius: 8px; transition: color .15s, background .15s; cursor: pointer;
+    }
+    .nav-links a:hover    { color: var(--text); background: var(--surface); }
+    .nav-links a.nav-act  { color: var(--text); background: var(--surface2); }
+    .nav-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .nav-ghost { text-decoration: none; color: var(--text2); font-size: 14px; font-weight: 500; padding: 6px 14px; border-radius: 8px; transition: color .15s; cursor: pointer; }
+    .nav-ghost:hover { color: var(--text); }
+    .btn-p {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: var(--accent); color: #fff; font-size: 14px; font-weight: 600;
+      padding: 8px 18px; border-radius: 9px; text-decoration: none; border: none;
+      cursor: pointer; transition: opacity .15s, transform .1s, box-shadow .2s;
+      letter-spacing: -.1px; white-space: nowrap; font-family: inherit;
+    }
+    .btn-p:hover  { opacity: .88; box-shadow: 0 0 28px var(--aglow); }
+    .btn-p:active { transform: scale(.98); }
+    .btn-g {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: transparent; color: var(--text); font-size: 14px; font-weight: 600;
+      padding: 8px 18px; border-radius: 9px; text-decoration: none;
+      border: 1px solid var(--border2); cursor: pointer;
+      transition: background .15s; letter-spacing: -.1px; font-family: inherit;
+    }
+    .btn-g:hover { background: var(--surface); }
+
+    .nav-burger { display: none; flex-direction: column; gap: 5px; cursor: pointer; border: none; background: none; padding: 6px; margin-left: auto; }
+    .hbar { width: 22px; height: 2px; background: var(--text2); border-radius: 2px; }
+    .nav-mobile {
+      display: none; position: fixed; top: var(--nav-h); left: 0; right: 0; z-index: 99;
+      background: rgba(10,10,10,.96); backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border); padding: 16px 32px 24px; flex-direction: column; gap: 2px;
+    }
+    .nav-mobile.open { display: flex; }
+    .nav-mobile a { text-decoration: none; color: var(--text2); font-size: 15px; font-weight: 500; padding: 11px 0; border-bottom: 1px solid var(--border); transition: color .15s; cursor: pointer; display: block; }
+    .nav-mobile a:hover { color: var(--text); }
+    .nav-mobile a:last-of-type { border: none; }
+
+    /* ── Pages ── */
+    .page { display: none; position: relative; z-index: 1; }
+    .page.active { display: block; animation: pgIn .28s ease both; }
+    @keyframes pgIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+    /* ── Layout ── */
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+    .eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 12px; font-weight: 600; letter-spacing: .9px; text-transform: uppercase;
+      color: var(--accent2); margin-bottom: 14px;
+    }
+    .eyebrow::before { content: ''; width: 14px; height: 1px; background: var(--accent2); }
+    .sec-title { font-size: clamp(28px,4vw,46px); font-weight: 800; letter-spacing: -1.8px; line-height: 1.12; margin-bottom: 16px; }
+    .sec-sub   { font-size: 17px; color: var(--text2); line-height: 1.65; }
+
+    /* ── Scroll reveal — replays every scroll ── */
+    .reveal {
+      opacity: 0; transform: translateY(28px);
+      transition: opacity .7s ease, transform .7s ease;
+      transition-delay: calc(var(--i,0) * 85ms);
+    }
+    .reveal.in { opacity: 1; transform: none; }
+
+    /* ════════════ HOME ════════════ */
+    #s-hero {
+      min-height: 100vh; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; text-align: center;
+      padding: calc(var(--nav-h) + 64px) 24px 96px; overflow: hidden; position: relative;
+    }
+    #s-hero::before {
+      content: ''; position: absolute; inset: 0;
+      background-image: radial-gradient(circle,rgba(255,255,255,.055) 1px,transparent 1px);
+      background-size: 36px 36px;
+      -webkit-mask-image: radial-gradient(ellipse 75% 80% at 50% 50%,#000 25%,transparent 72%);
+      mask-image: radial-gradient(ellipse 75% 80% at 50% 50%,#000 25%,transparent 72%);
+      pointer-events: none;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 12.5px; font-weight: 500; color: var(--accent2);
+      background: rgba(99,102,241,.1); border: 1px solid rgba(99,102,241,.25);
+      padding: 5px 14px 5px 10px; border-radius: 999px; margin-bottom: 36px;
+      animation: bFloat 3.5s ease-in-out infinite; cursor: default; user-select: none;
+    }
+    .badge-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: bPulse 2s ease-in-out infinite; }
+    @keyframes bFloat  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
+    @keyframes bPulse  { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.75)} }
+
+    .hero-hl { font-size: clamp(38px,6.5vw,76px); font-weight: 800; letter-spacing: -3px; line-height: 1.06; margin-bottom: 26px; max-width: 840px; }
+    .hero-hl .w { display: inline-block; opacity: 0; transform: translateY(22px); animation: wRev .55s cubic-bezier(.22,1,.36,1) forwards; }
+    @keyframes wRev { to { opacity: 1; transform: none; } }
+    .grad { background: linear-gradient(120deg,#fff 0%,var(--accent2) 45%,var(--cyan) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+
+    .hero-sub  { font-size: clamp(16px,2vw,20px); color: var(--text2); max-width: 540px; line-height: 1.68; margin-bottom: 44px; opacity: 0; animation: sup .75s ease .72s forwards; }
+    @keyframes sup { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:none} }
+    .hero-ctas { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-bottom: 72px; opacity: 0; animation: sup .75s ease .88s forwards; }
+    .hero-ctas .btn-p, .hero-ctas .btn-g { font-size: 15px; padding: 12px 26px; }
+
+    /* Hero mockup */
+    .hmw { width: 100%; max-width: 660px; opacity: 0; animation: sup .75s ease 1.08s forwards; }
+    .hm {
+      background: rgba(255,255,255,.028); border: 1px solid var(--border); border-radius: var(--rl);
+      padding: 20px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      position: relative; overflow: hidden; text-align: left;
+    }
+    .hm::before { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(99,102,241,.04) 0%,transparent 55%); pointer-events:none; }
+    .mtbar { display:flex; align-items:center; gap:6px; margin-bottom:16px; padding-bottom:14px; border-bottom:1px solid var(--border); }
+    .mdot  { width:11px; height:11px; border-radius:50%; }
+    .mdot-r{background:#ff5f57} .mdot-y{background:#febc2e} .mdot-g{background:#28c840}
+    .mtname { margin-left:10px; font-size:12px; color:var(--text3); font-family:'SF Mono','Fira Code',monospace; }
+    .mtop   { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+    .mfile  { font-size:13px; font-weight:500; color:var(--text2); font-family:'SF Mono','Fira Code',monospace; }
+    .mspill { font-size:11.5px; font-weight:600; padding:3px 10px; border-radius:999px; transition:background .4s,color .4s; }
+    .mcard  { display:flex; align-items:center; gap:11px; padding:9px 11px; border-radius:9px; border-left:3px solid transparent; margin-bottom:6px; background:rgba(255,255,255,.02); opacity:0; transform:translateX(-10px); transition:opacity .35s ease,transform .35s ease; }
+    .mcard.in { opacity:1; transform:none; }
+    .mcard.pass{border-left-color:var(--green)} .mcard.error{border-left-color:var(--red)} .mcard.warn{border-left-color:var(--yellow)}
+    .micon { width:22px; height:22px; border-radius:5px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0; }
+    .micon.pass{background:rgba(34,197,94,.14);color:var(--green)} .micon.error{background:rgba(239,68,68,.14);color:var(--red)} .micon.warn{background:rgba(234,179,8,.14);color:var(--yellow)}
+    .mbody{flex:1;min-width:0} .mname{font-size:12px;font-weight:600;color:var(--text)} .mmsg{font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .mbadge{font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;padding:2px 7px;border-radius:4px;flex-shrink:0}
+    .mbadge.pass{background:rgba(34,197,94,.12);color:var(--green)} .mbadge.error{background:rgba(239,68,68,.12);color:var(--red)} .mbadge.warn{background:rgba(234,179,8,.12);color:var(--yellow)}
+
+    .hproof { display:flex; align-items:center; gap:12px; justify-content:center; margin-top:44px; opacity:0; animation:sup .75s ease 1.4s forwards; font-size:14px; color:var(--text2); }
+    .pavs{display:flex}
+    .pav{width:30px;height:30px;border-radius:50%;border:2.5px solid var(--bg);margin-left:-9px;flex-shrink:0}
+    .pav:first-child{margin-left:0}
+    .pav:nth-child(1){background:linear-gradient(135deg,var(--accent),var(--cyan))}
+    .pav:nth-child(2){background:linear-gradient(135deg,#a855f7,#ec4899)}
+    .pav:nth-child(3){background:linear-gradient(135deg,var(--cyan),var(--green))}
+    .pav:nth-child(4){background:linear-gradient(135deg,#f59e0b,var(--accent))}
+    .pav-text strong{color:var(--text)}
+
+    /* Features */
+    #s-feats { padding: 140px 24px; }
+    .fhdr { text-align:center; margin-bottom:64px; }
+    .fhdr .sec-sub { max-width:440px; margin:0 auto; }
+    .fgrid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+    .fc {
+      background:var(--surface); border:1px solid var(--border); border-radius:var(--rl);
+      padding:28px; position:relative; overflow:hidden;
+      transition:transform .25s,border-color .25s,box-shadow .25s;
+    }
+    .fc::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 30% 20%,rgba(99,102,241,.1) 0%,transparent 65%);opacity:0;transition:opacity .3s;pointer-events:none}
+    .fc:hover{transform:translateY(-4px);border-color:rgba(99,102,241,.3);box-shadow:0 20px 60px rgba(0,0,0,.45),0 0 0 1px rgba(99,102,241,.12)}
+    .fc:hover::after{opacity:1}
+    .fci{width:46px;height:46px;border-radius:11px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.2);display:flex;align-items:center;justify-content:center;color:var(--accent2);margin-bottom:20px}
+    .fci svg{width:22px;height:22px}
+    .fc h3{font-size:16px;font-weight:700;letter-spacing:-.3px;margin-bottom:9px}
+    .fc p{font-size:14px;color:var(--text2);line-height:1.65}
+
+    /* How it works */
+    #s-hiw { padding:140px 24px; background:var(--bg2); }
+    .hiw-hdr{text-align:center;margin-bottom:80px}
+    .hiw-hdr .sec-sub{max-width:400px;margin:0 auto}
+    .hiw-steps{display:flex;position:relative;max-width:880px;margin:0 auto}
+    .hiw-steps::before{content:'';position:absolute;top:32px;left:calc(100% / 6);right:calc(100% / 6);height:1px;background:linear-gradient(90deg,var(--accent),var(--cyan));opacity:.35}
+    .hiw-step{flex:1;text-align:center;padding:0 32px}
+    .hiw-n{width:64px;height:64px;border-radius:50%;border:1px solid rgba(99,102,241,.4);background:var(--bg);display:flex;align-items:center;justify-content:center;margin:0 auto 28px;font-size:22px;font-weight:800;color:var(--accent2);position:relative;z-index:1;transition:border-color .25s,box-shadow .25s}
+    .hiw-step:hover .hiw-n{border-color:var(--accent);box-shadow:0 0 28px var(--aglow)}
+    .hiw-step h3{font-size:17px;font-weight:700;letter-spacing:-.3px;margin-bottom:10px}
+    .hiw-step p{font-size:14px;color:var(--text2);line-height:1.65}
+
+    /* ════════════ CHECKER PAGE ════════════ */
+    .tool-wrap {
+      padding: calc(var(--nav-h) + 64px) 24px 80px;
+      min-height: 100vh; display:flex; flex-direction:column; align-items:center;
+    }
+    .tool-hdr{text-align:center;margin-bottom:52px;max-width:620px}
+    .tool-hdr h1{font-size:clamp(28px,4vw,44px);font-weight:800;letter-spacing:-1.8px;margin-bottom:12px}
+    .tool-hdr p{font-size:16px;color:var(--text2);line-height:1.65}
+    .tool-card{width:100%;max-width:720px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:var(--rl);padding:32px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+
+    .dz{border:1.5px dashed rgba(99,102,241,.32);border-radius:var(--r);background:rgba(99,102,241,.03);padding:60px 24px;text-align:center;cursor:pointer;position:relative;transition:border-color .2s,background .2s;margin-bottom:16px}
+    .dz:hover,.dz.over{border-color:var(--accent);background:rgba(99,102,241,.07)}
+    .dz input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+    .dz-ico{width:54px;height:54px;border-radius:14px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.22);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;color:var(--accent2)}
+    .dz-ico svg{width:26px;height:26px}
+    .dz h3{font-size:17px;font-weight:600;margin-bottom:7px}
+    .dz p{font-size:13.5px;color:var(--text2)}
+    .fchip{display:none;align-items:center;gap:7px;margin:18px auto 0;width:fit-content;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.25);color:var(--accent2);font-size:13px;font-weight:500;padding:5px 13px;border-radius:8px}
+    .fchip.show{display:inline-flex}
+
+    .run-btn{width:100%;padding:14px 24px;background:linear-gradient(135deg,var(--accent) 0%,#818cf8 100%);color:#fff;border:none;border-radius:var(--r);font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;letter-spacing:-.2px;position:relative;overflow:hidden;transition:opacity .2s,box-shadow .25s}
+    .run-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.14) 0%,transparent 55%);pointer-events:none}
+    .run-btn:hover:not(:disabled){box-shadow:0 0 36px rgba(99,102,241,.55)}
+    .run-btn:disabled{opacity:.4;cursor:not-allowed}
+    .run-btn.loading{animation:bpulse 1.3s ease-in-out infinite}
+    @keyframes bpulse{0%,100%{box-shadow:0 0 0 0 rgba(99,102,241,.45)}50%{box-shadow:0 0 0 12px rgba(99,102,241,0)}}
+    .bspin{width:18px;height:18px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .cload{display:none;flex-direction:column;align-items:center;gap:14px;padding:48px 0;color:var(--text2);font-size:14px}
+    .lring{width:42px;height:42px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .85s linear infinite}
+    .cerr{display:none;background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.2);color:#fca5a5;border-radius:var(--r);padding:12px 16px;font-size:13.5px;margin-top:14px}
+
+    .cres{display:none;flex-direction:column;gap:16px;margin-top:24px}
+    .rban{display:flex;align-items:center;gap:12px;padding:14px 18px;border-radius:var(--r);font-weight:700;font-size:15px;letter-spacing:-.2px}
+    .rban svg{width:20px;height:20px;flex-shrink:0}
+    .rban.pass{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.22);color:var(--green)}
+    .rban.fail{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.22);color:var(--red)}
+    .rpills{display:flex;gap:8px;flex-wrap:wrap}
+    .rpill{display:flex;align-items:center;gap:7px;padding:5px 13px;border-radius:999px;font-size:12.5px;font-weight:500;background:var(--surface);border:1px solid var(--border);color:var(--text2)}
+    .pdot{width:7px;height:7px;border-radius:50%} .pn{color:var(--text);font-weight:700}
+    .rdiv{font-size:11px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--text3);padding-bottom:8px;border-bottom:1px solid var(--border)}
+    .rlist{display:flex;flex-direction:column;gap:8px}
+    .rc{background:rgba(255,255,255,.022);border:1px solid var(--border);border-left-width:3px;border-radius:var(--r);padding:14px 16px;display:flex;flex-direction:column;gap:7px;transition:border-color .2s}
+    .rc:hover{border-color:var(--border2)}
+    .rc.pass{border-left-color:var(--green)}.rc.error{border-left-color:var(--red)}.rc.warn{border-left-color:var(--yellow)}.rc.info{border-left-color:var(--text3)}
+    .rch{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+    .rbdg{font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;padding:2px 8px;border-radius:5px}
+    .rc.pass .rbdg{background:rgba(34,197,94,.12);color:var(--green)}.rc.error .rbdg{background:rgba(239,68,68,.12);color:var(--red)}.rc.warn .rbdg{background:rgba(234,179,8,.12);color:var(--yellow)}.rc.info .rbdg{background:rgba(82,82,82,.18);color:var(--text2)}
+    .rcn{font-size:13.5px;font-weight:700}.rcm{font-size:13px;color:var(--text2);line-height:1.55}
+    .rmeta{display:flex;gap:7px;flex-wrap:wrap;margin-top:2px}
+    .mtag{font-size:12px;color:var(--text2);background:rgba(255,255,255,.04);border:1px solid var(--border);padding:2px 9px;border-radius:5px;font-family:'SF Mono','Fira Code',monospace}
+    .mk{color:var(--text3);font-size:10.5px;font-weight:600;letter-spacing:.3px}
+    .rsugg{display:flex;align-items:flex-start;gap:8px;background:rgba(99,102,241,.07);border:1px solid rgba(99,102,241,.18);border-radius:9px;padding:9px 12px;margin-top:4px;font-size:13px;color:#a5b4fc;line-height:1.55}
+    .si{flex-shrink:0;font-size:15px}
+
+    /* ════════════ PRICING PAGE ════════════ */
+    .pricing-wrap{padding:calc(var(--nav-h) + 80px) 24px 100px}
+    .phdr{text-align:center;margin-bottom:64px}
+    .phdr .sec-sub{max-width:400px;margin:0 auto}
+    .pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:980px;margin:0 auto;align-items:start}
+    .pcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:30px;position:relative;overflow:hidden;transition:transform .25s,box-shadow .25s}
+    .pcard:not(.locked):hover{transform:translateY(-4px)}
+    .pcard.feat{border-color:rgba(99,102,241,.4);background:rgba(99,102,241,.05)}
+    .pcard.feat:not(.locked):hover{box-shadow:0 20px 60px rgba(0,0,0,.45),0 0 0 1px rgba(99,102,241,.15)}
+
+    /* Coming-soon overlay */
+    .cs-ov{position:absolute;inset:0;z-index:3;background:rgba(10,10,10,.75);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);border-radius:var(--rl);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px}
+    .cs-lock{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.07);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;color:var(--text2)}
+    .cs-lock svg{width:20px;height:20px}
+    .cs-lbl{font-size:13px;font-weight:600;color:var(--text2)}
+
+    .ppop{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--green);background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);padding:3px 10px;border-radius:999px;margin-bottom:16px}
+    .pname{font-size:20px;font-weight:800;letter-spacing:-.5px;margin-bottom:6px}
+    .pamt{font-size:40px;font-weight:800;letter-spacing:-2px;line-height:1;margin-bottom:6px}
+    .pamt sup{font-size:20px;font-weight:600;letter-spacing:0;vertical-align:super}
+    .pnote{font-size:13px;color:var(--text2);margin-bottom:24px}
+    .pdivider{height:1px;background:var(--border);margin-bottom:20px}
+    .pfeats{list-style:none;display:flex;flex-direction:column;gap:11px;margin-bottom:26px}
+    .pfeat{display:flex;align-items:flex-start;gap:10px;font-size:14px;color:var(--text2)}
+    .pcheck{width:18px;height:18px;border-radius:50%;background:rgba(34,197,94,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;color:var(--green)}
+    .pcheck svg{width:11px;height:11px}
+    .pcta{width:100%;padding:11px 20px;border-radius:var(--r);font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;border:none;letter-spacing:-.1px;transition:opacity .2s,box-shadow .2s,background .15s}
+    .pcta.solid{background:var(--accent);color:#fff}.pcta.solid:hover{opacity:.88;box-shadow:0 0 24px rgba(99,102,241,.4)}
+    .pcta.outline{background:transparent;color:var(--text2);border:1px solid var(--border2)}.pcta.outline:hover{background:var(--surface);color:var(--text)}
+
+    .notify-sec{max-width:980px;margin:48px auto 0;padding:32px;background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);text-align:center}
+    .notify-sec h3{font-size:18px;font-weight:700;letter-spacing:-.4px;margin-bottom:8px}
+    .notify-sec p{font-size:14px;color:var(--text2);margin-bottom:22px}
+    .nform{display:flex;gap:10px;max-width:420px;margin:0 auto;flex-wrap:wrap;justify-content:center}
+    .ninput{flex:1;min-width:200px;padding:10px 16px;background:rgba(255,255,255,.04);border:1px solid var(--border2);border-radius:var(--r);color:var(--text);font-size:14px;font-family:inherit;outline:none;transition:border-color .2s}
+    .ninput:focus{border-color:var(--accent)}
+    .ninput::placeholder{color:var(--text3)}
+    .nbtn{padding:10px 20px;background:var(--accent);color:#fff;border:none;border-radius:var(--r);font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap;transition:opacity .15s,box-shadow .2s}
+    .nbtn:hover{opacity:.88;box-shadow:0 0 20px var(--aglow)}
+    .nsuc{display:none;align-items:center;gap:8px;font-size:14px;color:var(--green);justify-content:center;margin-top:12px}
+
+    /* ════════════ DOCS PAGE ════════════ */
+    .docs-wrap{padding:calc(var(--nav-h) + 80px) 24px 100px}
+    .dhdr{text-align:center;margin-bottom:64px;max-width:640px;margin-left:auto;margin-right:auto}
+    .dhdr h1{font-size:clamp(28px,4vw,46px);font-weight:800;letter-spacing:-1.8px;margin-bottom:12px}
+    .dhdr p{font-size:17px;color:var(--text2);line-height:1.65}
+    .dlist{max-width:800px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+    .dcard{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--border2);border-radius:var(--rl);padding:28px;transition:border-left-color .2s,box-shadow .2s}
+    .dcard:hover{border-left-color:var(--accent);box-shadow:0 8px 32px rgba(0,0,0,.3)}
+    .dchdr{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+    .dcid{font-family:'SF Mono','Fira Code',monospace;font-size:13px;font-weight:600;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.2);color:var(--accent2);padding:3px 10px;border-radius:6px}
+    .dsev{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:2px 8px;border-radius:5px}
+    .dsev.error{background:rgba(239,68,68,.12);color:var(--red)}
+    .dsev.warning{background:rgba(234,179,8,.12);color:var(--yellow)}
+    .dsev.info{background:rgba(82,82,82,.18);color:var(--text2)}
+    .dcard h3{font-size:16px;font-weight:700;margin-bottom:9px;letter-spacing:-.3px}
+    .dcard p{font-size:14px;color:var(--text2);line-height:1.65}
+    .dbox{background:rgba(255,255,255,.025);border:1px solid var(--border);border-radius:8px;padding:12px 15px;font-size:13px;color:var(--text2);line-height:1.65;margin-top:12px}
+    .dbox strong{color:var(--text);font-weight:600}
+
+    /* ════════════ FOOTER ════════════ */
+    .ft{border-top:1px solid var(--border);padding:56px 32px 40px;position:relative;z-index:1}
+    .fti{max-width:1200px;margin:0 auto;display:flex;align-items:flex-start;justify-content:space-between;gap:48px;flex-wrap:wrap}
+    .ftb{display:flex;flex-direction:column;gap:14px}
+    .fttag{font-size:13px;color:var(--text2);max-width:220px;line-height:1.6}
+    .ftcols{display:flex;gap:48px;flex-wrap:wrap}
+    .ftcol h4{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--text3);margin-bottom:14px}
+    .ftcol ul{list-style:none;display:flex;flex-direction:column;gap:9px}
+    .ftcol a{text-decoration:none;font-size:14px;color:var(--text2);transition:color .15s;cursor:pointer}
+    .ftcol a:hover{color:var(--text)}
+    .ftbot{max-width:1200px;margin:32px auto 0;padding-top:24px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+    .ftcopy{font-size:13px;color:var(--text3)}
+    .ftsocs{display:flex;gap:10px}
+    .sl{width:34px;height:34px;border-radius:9px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;text-decoration:none;color:var(--text2);transition:color .15s,border-color .15s,background .15s}
+    .sl:hover{color:var(--text);border-color:var(--border2);background:var(--surface2)}
+    .sl svg{width:16px;height:16px}
+
+    /* ════════════ RESPONSIVE ════════════ */
+    @media(max-width:960px){
+      .fgrid{grid-template-columns:repeat(2,1fr)}
+      .pgrid{grid-template-columns:1fr;max-width:460px;margin:0 auto}
+    }
+    @media(max-width:720px){
+      .hiw-steps{flex-direction:column;gap:48px}
+      .hiw-steps::before{display:none}
+      .fti{flex-direction:column}
+      .ftbot{flex-direction:column;align-items:flex-start}
+    }
+    @media(max-width:640px){
+      .nav-links,.nav-actions{display:none}
+      .nav-burger{display:flex}
+      .fgrid{grid-template-columns:1fr}
+      .hero-hl{letter-spacing:-2px}
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg-orbs" aria-hidden="true">
+  <div class="bg-orb bg-orb-1"></div>
+  <div class="bg-orb bg-orb-2"></div>
+  <div class="bg-orb bg-orb-3"></div>
+</div>
+
+<!-- ══ NAV ══ -->
+<nav class="nav" id="nav">
+  <div class="nav-inner">
+    <div class="nav-logo" onclick="go('home')">
+      <div class="logo-mark">NC</div>
+      <span class="logo-text">Netlist Checker</span>
+    </div>
+    <ul class="nav-links">
+      <li><a data-page="home"    class="nav-act" onclick="go('home')">Home</a></li>
+      <li><a data-page="checker"              onclick="go('checker')">Checker</a></li>
+      <li><a data-page="pricing"              onclick="go('pricing')">Pricing</a></li>
+      <li><a data-page="docs"                 onclick="go('docs')">Docs</a></li>
+    </ul>
+    <div class="nav-actions">
+      <span class="nav-ghost">Sign in</span>
+      <button class="btn-p" onclick="go('checker')">Get started free</button>
+    </div>
+    <button class="nav-burger" id="burger" aria-label="Menu">
+      <div class="hbar"></div><div class="hbar"></div><div class="hbar"></div>
+    </button>
+  </div>
+</nav>
+
+<div class="nav-mobile" id="navMob">
+  <a onclick="go('home');closeMob()">Home</a>
+  <a onclick="go('checker');closeMob()">Checker</a>
+  <a onclick="go('pricing');closeMob()">Pricing</a>
+  <a onclick="go('docs');closeMob()">Docs</a>
+  <a onclick="go('checker');closeMob()" style="margin-top:10px;text-align:center;padding:12px 0;background:var(--accent);border-radius:9px;color:#fff;font-weight:600">Get started free</a>
+</div>
+
+<!-- ══════════════════════════════════════
+     PAGE: HOME
+══════════════════════════════════════ -->
+<div class="page active" id="pg-home">
+
+  <section id="s-hero">
+    <div class="hero-badge"><div class="badge-dot"></div>Now in beta — KiCad 7 support</div>
+    <h1 class="hero-hl" id="heroHl" aria-label="Catch PCB errors before they cost you."></h1>
+    <p class="hero-sub">Automated design rule checking for KiCad netlists. Upload your <span class="ic">.net</span> file and get a full report in seconds.</p>
+    <div class="hero-ctas">
+      <button class="btn-p" onclick="go('checker')">Check your netlist <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/></svg></button>
+      <button class="btn-g" onclick="document.getElementById('s-hiw').scrollIntoView({behavior:'smooth'})">See how it works</button>
+    </div>
+    <div class="hmw">
+      <div class="hm">
+        <div class="mtbar">
+          <div class="mdot mdot-r"></div><div class="mdot mdot-y"></div><div class="mdot mdot-g"></div>
+          <span class="mtname">netlist-checker — schematic_v3.net</span>
+        </div>
+        <div class="mtop">
+          <span class="mfile">schematic_v3.net</span>
+          <span class="mspill" id="msp">Analyzing&hellip;</span>
+        </div>
+        <div id="mcards"></div>
+      </div>
+    </div>
+    <div class="hproof">
+      <div class="pavs"><div class="pav"></div><div class="pav"></div><div class="pav"></div><div class="pav"></div></div>
+      <span class="pav-text">Trusted by <strong><span class="counter" data-target="500">0</span>+</strong> hardware engineers</span>
+    </div>
+  </section>
+
+  <section id="s-feats">
+    <div class="container">
+      <div class="fhdr reveal">
+        <div class="eyebrow">Features</div>
+        <h2 class="sec-title">Everything you need to<br>ship reliable hardware</h2>
+        <p class="sec-sub">Eight automated checks covering the most common KiCad schematic errors, so you catch them before fabrication.</p>
+      </div>
+      <div class="fgrid">
+        <div class="fc reveal" style="--i:0"><div class="fci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/></svg></div><h3>Instant Analysis</h3><p>Results in under a second. Upload your netlist and get a complete DRC report without waiting.</p></div>
+        <div class="fc reveal" style="--i:1"><div class="fci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z"/></svg></div><h3>8 Design Rules</h3><p>Power nets, SPI buses, decoupling caps, net stubs, pin assignments, and footprint checks — all automated.</p></div>
+        <div class="fc reveal" style="--i:2"><div class="fci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 14.25h13.5m-13.5 0a3 3 0 0 1-3-3m3 3a3 3 0 1 0 6 0m-6 0H2.25m11.25 0H18m0 0h3.75m-3.75 0a3 3 0 0 1-3-3m3 3a3 3 0 1 0 6 0M6.75 9.75v4.5m10.5-4.5v4.5"/></svg></div><h3>SPI Validation</h3><p>Cross-references CubeMX pin assignments to catch MISO/MOSI swaps and missing chip-select lines.</p></div>
+        <div class="fc reveal" style="--i:3"><div class="fci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9z"/></svg></div><h3>KiCad Native</h3><p>Works directly with <span class="ic">.net</span> exports from KiCad 6 and 7. No conversion tools or plugins required.</p></div>
+        <div class="fc reveal" style="--i:4"><div class="fci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 0 0 1.5-.189m-1.5.189a6.01 6.01 0 0 1-1.5-.189m3.75 7.478a12.06 12.06 0 0 1-4.5 0m3.75 2.383a14.406 14.406 0 0 1-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 1 0-7.517 0c.85.493 1.509 1.333 1.509 2.316V18"/></svg></div><h3>Clear Suggestions</h3><p>Every failure comes with an actionable fix. Know exactly what to change and where.</p></div>
+        <div class="fc reveal" style="--i:5"><div class="fci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.25 9.75 16.5 12l-2.25 2.25m-4.5 0L7.5 12l2.25-2.25M6 20.25h12A2.25 2.25 0 0 0 20.25 18V6A2.25 2.25 0 0 0 18 3.75H6A2.25 2.25 0 0 0 3.75 6v12A2.25 2.25 0 0 0 6 20.25z"/></svg></div><h3>REST API</h3><p>Integrate into CI/CD with a simple <span class="ic">POST /check</span> multipart upload. JSON results, zero config.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="s-hiw">
+    <div class="container">
+      <div class="hiw-hdr reveal">
+        <div class="eyebrow">How it works</div>
+        <h2 class="sec-title">Three steps to cleaner hardware</h2>
+        <p class="sec-sub">From KiCad export to a verified DRC report in under a minute.</p>
+      </div>
+      <div class="hiw-steps">
+        <div class="hiw-step reveal" style="--i:0"><div class="hiw-n">1</div><h3>Export from KiCad</h3><p>File &rarr; Export &rarr; Netlist in KiCad Schematic Editor. Save as a <span class="ic">.net</span> file — takes ten seconds.</p></div>
+        <div class="hiw-step reveal" style="--i:1"><div class="hiw-n">2</div><h3>Upload &amp; Check</h3><p>Drag and drop your file. All design rules run server-side and results appear in under a second.</p></div>
+        <div class="hiw-step reveal" style="--i:2"><div class="hiw-n">3</div><h3>Fix &amp; Ship</h3><p>Review each finding with its built-in suggestion, fix the issues, re-run, and ship with confidence.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="ft">
+    <div class="fti">
+      <div class="ftb">
+        <div class="nav-logo" onclick="go('home')" style="cursor:pointer"><div class="logo-mark">NC</div><span class="logo-text">Netlist Checker</span></div>
+        <p class="fttag">Automated DRC for KiCad netlists. Catch errors before they cost you.</p>
+      </div>
+      <div class="ftcols">
+        <div class="ftcol"><h4>Product</h4><ul><li><a onclick="go('home')">Home</a></li><li><a onclick="go('checker')">Checker</a></li><li><a onclick="go('pricing')">Pricing</a></li><li><a onclick="go('docs')">Docs</a></li></ul></div>
+        <div class="ftcol"><h4>Resources</h4><ul><li><a onclick="go('docs')">API Reference</a></li><li><a>Changelog</a></li><li><a>GitHub</a></li></ul></div>
+        <div class="ftcol"><h4>Company</h4><ul><li><a>About</a></li><li><a>Contact</a></li><li><a>Privacy</a></li><li><a>Terms</a></li></ul></div>
+      </div>
+    </div>
+    <div class="ftbot">
+      <p class="ftcopy">&copy; 2026 Netlist Checker. All rights reserved.</p>
+      <div class="ftsocs">
+        <a class="sl" aria-label="GitHub"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/></svg></a>
+        <a class="sl" aria-label="Twitter"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<!-- ══════════════════════════════════════
+     PAGE: CHECKER
+══════════════════════════════════════ -->
+<div class="page" id="pg-checker">
+  <div class="tool-wrap">
+    <div class="tool-hdr">
+      <div class="eyebrow">Tool</div>
+      <h1>Netlist checker</h1>
+      <p>Upload a KiCad <span class="ic">.net</span> file. All design rules run instantly — results appear below within a second.</p>
+    </div>
+
+    <div class="tool-card">
+      <div class="dz" id="dz">
+        <input type="file" id="fi" accept=".net" />
+        <div class="dz-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg></div>
+        <h3>Drop your .net file here</h3>
+        <p>or click to browse &mdash; KiCad 6 &amp; 7 supported</p>
+        <div class="fchip" id="fchip"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg><span id="fname"></span></div>
+      </div>
+
+      <button class="run-btn" id="runBtn" disabled>
+        <div class="bspin" id="bspin"></div>
+        <svg id="bico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M12 5l7 7-7 7"/></svg>
+        Run Checks
+      </button>
+
+      <div class="cerr" id="cerr"></div>
+
+      <div class="cload" id="cload">
+        <div class="lring"></div>
+        <span>Analyzing netlist&hellip;</span>
+      </div>
+
+      <div class="cres" id="cres">
+        <div class="rban" id="rban"></div>
+        <div class="rpills" id="rpills"></div>
+        <div class="rdiv">Check Results</div>
+        <div class="rlist" id="rlist"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="ft">
+    <div class="fti">
+      <div class="ftb">
+        <div class="nav-logo" onclick="go('home')" style="cursor:pointer"><div class="logo-mark">NC</div><span class="logo-text">Netlist Checker</span></div>
+        <p class="fttag">Automated DRC for KiCad netlists. Catch errors before they cost you.</p>
+      </div>
+      <div class="ftcols">
+        <div class="ftcol"><h4>Product</h4><ul><li><a onclick="go('home')">Home</a></li><li><a onclick="go('checker')">Checker</a></li><li><a onclick="go('pricing')">Pricing</a></li><li><a onclick="go('docs')">Docs</a></li></ul></div>
+        <div class="ftcol"><h4>Resources</h4><ul><li><a onclick="go('docs')">API Reference</a></li><li><a>Changelog</a></li><li><a>GitHub</a></li></ul></div>
+        <div class="ftcol"><h4>Company</h4><ul><li><a>About</a></li><li><a>Contact</a></li><li><a>Privacy</a></li><li><a>Terms</a></li></ul></div>
+      </div>
+    </div>
+    <div class="ftbot">
+      <p class="ftcopy">&copy; 2026 Netlist Checker. All rights reserved.</p>
+      <div class="ftsocs">
+        <a class="sl" aria-label="GitHub"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/></svg></a>
+        <a class="sl" aria-label="Twitter"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<!-- ══════════════════════════════════════
+     PAGE: PRICING
+══════════════════════════════════════ -->
+<div class="page" id="pg-pricing">
+  <div class="pricing-wrap">
+    <div class="phdr reveal">
+      <div class="eyebrow">Pricing</div>
+      <h2 class="sec-title">Simple, transparent pricing</h2>
+      <p class="sec-sub">Start free. Upgrade when you need more. No surprises.</p>
+    </div>
+
+    <div class="pgrid">
+      <!-- Free -->
+      <div class="pcard feat reveal" style="--i:0">
+        <div class="ppop">Most popular</div>
+        <div class="pname">Hobby</div>
+        <div class="pamt">Free</div>
+        <div class="pnote">No credit card needed</div>
+        <div class="pdivider"></div>
+        <ul class="pfeats">
+          <li class="pfeat"><div class="pcheck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg></div>All 8 design rules</li>
+          <li class="pfeat"><div class="pcheck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg></div>Web interface</li>
+          <li class="pfeat"><div class="pcheck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg></div>Full result details &amp; suggestions</li>
+          <li class="pfeat"><div class="pcheck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg></div>Community support</li>
+        </ul>
+        <button class="pcta solid" onclick="go('checker')">Get started free</button>
+      </div>
+
+      <!-- Pro (locked) -->
+      <div class="pcard locked reveal" style="--i:1">
+        <div class="cs-ov">
+          <div class="cs-lock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25z"/></svg></div>
+          <div class="cs-lbl">Coming soon</div>
+        </div>
+        <div class="pname">Pro</div>
+        <div class="pamt"><sup>$</sup>12<span style="font-size:20px;font-weight:500;letter-spacing:-.5px">/mo</span></div>
+        <div class="pnote">Billed monthly, cancel anytime</div>
+        <div class="pdivider"></div>
+        <ul class="pfeats">
+          <li class="pfeat"><div class="pcheck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg></div>Unlimited checks</li>
+          <li class="pfeat"><div class="pcheck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg></div>REST API access</li>
+          <li class="pfeat"><div class="pcheck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg></div>Priority support</li>
+          <li class="pfeat"><div class="pcheck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg></div>Check history &amp; exports</li>
+        </ul>
+        <button class="pcta outline" disabled>Coming soon</button>
+      </div>
+
+      <!-- Team (locked) -->
+      <div class="pcard locked reveal" style="--i:2">
+        <div class="cs-ov">
+          <div class="cs-lock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25z"/></svg></div>
+          <div class="cs-lbl">Coming soon</div>
+        </div>
+        <div class="pname">Team</div>
+        <div class="pamt"><sup>$</sup>49<span style="font-size:20px;font-weight:500;letter-spacing:-.5px">/mo</span></div>
+        <div class="pnote">Up to 10 seats</div>
+        <div class="pdivider"></div>
+        <ul class="pfeats">
+          <li class="pfeat"><div class="pcheck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg></div>Everything in Pro</li>
+          <li class="pfeat"><div class="pcheck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg></div>Team dashboard</li>
+          <li class="pfeat"><div class="pcheck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg></div>Custom rules</li>
+          <li class="pfeat"><div class="pcheck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg></div>SSO &amp; SAML</li>
+        </ul>
+        <button class="pcta outline" disabled>Coming soon</button>
+      </div>
+    </div>
+
+    <!-- Notify form -->
+  </div>
+
+  <footer class="ft">
+    <div class="fti">
+      <div class="ftb">
+        <div class="nav-logo" onclick="go('home')" style="cursor:pointer"><div class="logo-mark">NC</div><span class="logo-text">Netlist Checker</span></div>
+        <p class="fttag">Automated DRC for KiCad netlists. Catch errors before they cost you.</p>
+      </div>
+      <div class="ftcols">
+        <div class="ftcol"><h4>Product</h4><ul><li><a onclick="go('home')">Home</a></li><li><a onclick="go('checker')">Checker</a></li><li><a onclick="go('pricing')">Pricing</a></li><li><a onclick="go('docs')">Docs</a></li></ul></div>
+        <div class="ftcol"><h4>Resources</h4><ul><li><a onclick="go('docs')">API Reference</a></li><li><a>Changelog</a></li><li><a>GitHub</a></li></ul></div>
+        <div class="ftcol"><h4>Company</h4><ul><li><a>About</a></li><li><a>Contact</a></li><li><a>Privacy</a></li><li><a>Terms</a></li></ul></div>
+      </div>
+    </div>
+    <div class="ftbot">
+      <p class="ftcopy">&copy; 2026 Netlist Checker. All rights reserved.</p>
+      <div class="ftsocs">
+        <a class="sl" aria-label="GitHub"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/></svg></a>
+        <a class="sl" aria-label="Twitter"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<!-- ══════════════════════════════════════
+     PAGE: DOCS
+══════════════════════════════════════ -->
+<div class="page" id="pg-docs">
+  <div class="docs-wrap">
+    <div class="dhdr reveal">
+      <div class="eyebrow">Documentation</div>
+      <h1>Design rule reference</h1>
+      <p>Every check Netlist Checker runs, what it looks for, and what triggers a failure.</p>
+    </div>
+
+    <div class="dlist">
+
+      <div class="dcard reveal" style="--i:0">
+        <div class="dchdr"><span class="dcid">parse_integrity</span><span class="dsev error">Error</span></div>
+        <h3>Reference Integrity</h3>
+        <p>Verifies that every pin reference inside a net actually corresponds to a component defined in the netlist. A mismatch means the schematic has a dangling or mis-typed reference designator.</p>
+        <div class="dbox"><strong>Fails when:</strong> a net lists a pin on component <span class="ic">R99</span> but <span class="ic">R99</span> does not appear in the components section. <strong>Common cause:</strong> renaming a component in the schematic without updating net annotations.</div>
+      </div>
+
+      <div class="dcard reveal" style="--i:1">
+        <div class="dchdr"><span class="dcid">power_net_presence</span><span class="dsev error">Error</span></div>
+        <h3>Power &amp; Ground Net Presence</h3>
+        <p>Checks that the design contains at least one recognised power net (<span class="ic">VCC</span>, <span class="ic">3V3</span>, <span class="ic">5V</span>, <span class="ic">VBAT</span>, <span class="ic">VDD</span>) and at least one ground net (<span class="ic">GND</span>, <span class="ic">AGND</span>, <span class="ic">DGND</span>, <span class="ic">PGND</span>).</p>
+        <div class="dbox"><strong>Fails when:</strong> neither a power nor a ground net can be found. <strong>Common cause:</strong> power symbols were not added to the schematic, or the netlist was exported before the power section was connected.</div>
+      </div>
+
+      <div class="dcard reveal" style="--i:2">
+        <div class="dchdr"><span class="dcid">net_stub</span><span class="dsev warning">Warning</span></div>
+        <h3>Net Stub Detection</h3>
+        <p>Flags any net with fewer than two connections. A net with only one pin connected is a "stub" — the signal is driven but never received (or vice versa), which is almost always unintentional.</p>
+        <div class="dbox"><strong>Fails when:</strong> a net has exactly one pin. <strong>Common cause:</strong> a wire was started but not connected to the destination component, or a component was deleted without removing its net label.</div>
+      </div>
+
+      <div class="dcard reveal" style="--i:3">
+        <div class="dchdr"><span class="dcid">spi_bus_completeness</span><span class="dsev warning">Warning</span></div>
+        <h3>SPI Bus Completeness</h3>
+        <p>For each SPI bus found in the design (<span class="ic">SPI1</span>, <span class="ic">SPI2</span>, <span class="ic">SPI3</span>), confirms that all three required signal nets are present: <span class="ic">SCK</span>, <span class="ic">MOSI</span>, and <span class="ic">MISO</span>.</p>
+        <div class="dbox"><strong>Fails when:</strong> a bus is partially wired — e.g. <span class="ic">SPI1_SCK</span> and <span class="ic">SPI1_MOSI</span> exist but <span class="ic">SPI1_MISO</span> is missing. <strong>Common cause:</strong> read-only peripheral assumed MISO was not needed, or a net was accidentally left unnamed.</div>
+      </div>
+
+      <div class="dcard reveal" style="--i:4">
+        <div class="dchdr"><span class="dcid">spi_pin_assignment</span><span class="dsev error">Error</span></div>
+        <h3>SPI Pin Assignment (STM32F103)</h3>
+        <p>Cross-references SPI1 nets against the STM32F103 CubeMX pin map: <span class="ic">SPI1_SCK → PA5</span>, <span class="ic">SPI1_MOSI → PA7</span>, <span class="ic">SPI1_MISO → PA6</span>. Catches swapped lines before layout.</p>
+        <div class="dbox"><strong>Fails when:</strong> <span class="ic">SPI1_MOSI</span> is routed to U1 pin PA6 instead of PA7 (a common MISO/MOSI swap). <strong>Common cause:</strong> copy-pasting pin assignments from a datasheet without verifying against the CubeMX configuration.</div>
+      </div>
+
+      <div class="dcard reveal" style="--i:5">
+        <div class="dchdr"><span class="dcid">decoupling_capacitor</span><span class="dsev warning">Warning</span></div>
+        <h3>Decoupling Capacitor Presence</h3>
+        <p>For each IC (<span class="ic">U*</span>, <span class="ic">IC*</span>) connected to a recognised power net, verifies that at least one capacitor (<span class="ic">C*</span>) is also on that same power net.</p>
+        <div class="dbox"><strong>Fails when:</strong> <span class="ic">U3</span> is powered by <span class="ic">3V3</span> but no capacitor shares that net. <strong>Common cause:</strong> decoupling caps were placed in the layout but never tied to the schematic net, or were simply forgotten.</div>
+      </div>
+
+      <div class="dcard reveal" style="--i:6">
+        <div class="dchdr"><span class="dcid">footprint_consistency</span><span class="dsev info">Info</span></div>
+        <h3>Footprint Family Consistency</h3>
+        <p>Checks that passive components use footprints from the expected SMD library family: resistors (<span class="ic">R*</span>) should use <span class="ic">Resistor_SMD</span>, capacitors (<span class="ic">C*</span>) <span class="ic">Capacitor_SMD</span>, and inductors (<span class="ic">L*</span>) <span class="ic">Inductor_SMD</span>.</p>
+        <div class="dbox"><strong>Flags when:</strong> <span class="ic">R5</span> has a footprint from <span class="ic">Resistor_THT</span> while the rest of the board is SMD. This is informational — through-hole passives are sometimes intentional — but worth a human review before sending to fab.</div>
+      </div>
+
+      <div class="dcard reveal" style="--i:7">
+        <div class="dchdr"><span class="dcid">gnd_continuity</span><span class="dsev error">Error</span></div>
+        <h3>Ground Net Continuity</h3>
+        <p>Verifies that every IC with an identifiable ground pin (<span class="ic">GND</span>, <span class="ic">AGND</span>, <span class="ic">DGND</span>, <span class="ic">PGND</span>) is actually connected to a ground net in the netlist. An IC present in the schematic with a floating ground pin will not function on the board.</p>
+        <div class="dbox"><strong>Fails when:</strong> a component reference appears in the schematic but its GND pin has no net connection, or the connected net is not in the recognised ground-net family. <strong>Common cause:</strong> a ground symbol was placed near a pin visually but not electrically connected, or a multi-unit component has an unplaced power unit.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <footer class="ft">
+    <div class="fti">
+      <div class="ftb">
+        <div class="nav-logo" onclick="go('home')" style="cursor:pointer"><div class="logo-mark">NC</div><span class="logo-text">Netlist Checker</span></div>
+        <p class="fttag">Automated DRC for KiCad netlists. Catch errors before they cost you.</p>
+      </div>
+      <div class="ftcols">
+        <div class="ftcol"><h4>Product</h4><ul><li><a onclick="go('home')">Home</a></li><li><a onclick="go('checker')">Checker</a></li><li><a onclick="go('pricing')">Pricing</a></li><li><a onclick="go('docs')">Docs</a></li></ul></div>
+        <div class="ftcol"><h4>Resources</h4><ul><li><a onclick="go('docs')">API Reference</a></li><li><a>Changelog</a></li><li><a>GitHub</a></li></ul></div>
+        <div class="ftcol"><h4>Company</h4><ul><li><a>About</a></li><li><a>Contact</a></li><li><a>Privacy</a></li><li><a>Terms</a></li></ul></div>
+      </div>
+    </div>
+    <div class="ftbot">
+      <p class="ftcopy">&copy; 2026 Netlist Checker. All rights reserved.</p>
+      <div class="ftsocs">
+        <a class="sl" aria-label="GitHub"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/></svg></a>
+        <a class="sl" aria-label="Twitter"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<script>
+/* ── Page routing ── */
+let curPage = 'home';
+
+function go(id) {
+  if (id === curPage) { window.scrollTo({top:0,behavior:'smooth'}); return; }
+  const prev = document.getElementById('pg-' + curPage);
+  const next = document.getElementById('pg-' + id);
+  if (!next) return;
+
+  prev.classList.remove('active');
+  next.classList.add('active');
+  curPage = id;
+  window.scrollTo(0, 0);
+
+  // Update nav active state
+  document.querySelectorAll('.nav-links a[data-page]').forEach(a => {
+    a.classList.toggle('nav-act', a.dataset.page === id);
+  });
+
+  // Reset reveal elements so they animate in fresh
+  next.querySelectorAll('.reveal').forEach(el => el.classList.remove('in'));
+  // Trigger observer on now-visible elements
+  setTimeout(() => {
+    next.querySelectorAll('.reveal').forEach(el => revObs.observe(el));
+  }, 30);
+}
+
+/* ── Nav scroll + hamburger ── */
+const nav = document.getElementById('nav');
+const burger = document.getElementById('burger');
+const navMob = document.getElementById('navMob');
+
+window.addEventListener('scroll', () => nav.classList.toggle('scrolled', scrollY > 8), {passive:true});
+burger.addEventListener('click', () => navMob.classList.toggle('open'));
+function closeMob() { navMob.classList.remove('open'); }
+
+/* ── Hero headline ── */
+(function () {
+  const words = 'Catch PCB errors before they cost you.'.split(' ');
+  const gradSet = new Set(['errors','cost','you.']);
+  const el = document.getElementById('heroHl');
+  words.forEach((w, i) => {
+    const s = document.createElement('span');
+    s.className = 'w' + (gradSet.has(w) ? ' grad' : '');
+    s.textContent = w;
+    s.style.animationDelay = i * 85 + 'ms';
+    el.appendChild(s);
+    if (i < words.length - 1) el.appendChild(document.createTextNode(' '));
+  });
+})();
+
+/* ── Hero mockup loop ── */
+const MOCK = [
+  {t:'pass',  sym:'✓', name:'parse_integrity',    msg:'All net references point to valid components'},
+  {t:'pass',  sym:'✓', name:'power_net_presence',  msg:'Power and GND nets found'},
+  {t:'error', sym:'✕', name:'spi_pin_assignment',  msg:'SPI1_MOSI on U1 pin PA6, expected PA7'},
+  {t:'pass',  sym:'✓', name:'net_stub',            msg:'All nets have at least 2 connections'},
+  {t:'warn',  sym:'!', name:'decoupling_capacitor', msg:'U3 has no decoupling cap on 3V3'},
+  {t:'pass',  sym:'✓', name:'footprint_consistency','msg':'All passive footprints look correct'},
+];
+
+const mcards = document.getElementById('mcards');
+const msp    = document.getElementById('msp');
+
+function runMockup() {
+  mcards.innerHTML = '';
+  msp.textContent = 'Analyzing…';
+  msp.style.cssText = 'background:rgba(255,255,255,.06);color:var(--text2);border:1px solid var(--border);padding:3px 10px;border-radius:999px';
+
+  MOCK.forEach(d => {
+    const div = document.createElement('div');
+    div.className = 'mcard ' + d.t;
+    const badge = d.t === 'error' ? 'error' : d.t === 'warn' ? 'warn' : 'pass';
+    const blbl  = d.t === 'error' ? 'FAIL'  : d.t === 'warn' ? 'WARN' : 'PASS';
+    div.innerHTML = `<div class="micon ${d.t}">${d.sym}</div><div class="mbody"><div class="mname">${d.name}</div><div class="mmsg">${d.msg}</div></div><span class="mbadge ${badge}">${blbl}</span>`;
+    mcards.appendChild(div);
+  });
+
+  const cards = mcards.querySelectorAll('.mcard');
+  cards.forEach((c, i) => {
+    setTimeout(() => {
+      c.classList.add('in');
+      if (i === cards.length - 1) {
+        const errs = MOCK.filter(d => d.t === 'error').length;
+        const ok   = MOCK.length - errs;
+        setTimeout(() => {
+          msp.textContent = `${ok}/${MOCK.length} checks passed`;
+          if (errs) {
+            msp.style.cssText = 'background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.2);padding:3px 10px;border-radius:999px';
+          } else {
+            msp.style.cssText = 'background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.2);padding:3px 10px;border-radius:999px';
+          }
+        }, 300);
+        setTimeout(runMockup, 4500);
+      }
+    }, 200 + i * 260);
+  });
+}
+runMockup();
+
+/* ── Scroll reveal — replays every time element enters viewport ── */
+const revObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    // Add class when entering, remove when leaving — enables replay on every scroll
+    e.target.classList.toggle('in', e.isIntersecting);
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.reveal').forEach(el => revObs.observe(el));
+
+/* ── Counter animation ── */
+function countUp(el) {
+  const target = +el.dataset.target, dur = 1800, t0 = performance.now();
+  (function tick(now) {
+    const p = Math.min((now - t0) / dur, 1);
+    el.textContent = Math.floor((1 - Math.pow(1 - p, 3)) * target);
+    p < 1 ? requestAnimationFrame(tick) : (el.textContent = target);
+  })(t0);
+}
+const cntObs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) { countUp(e.target); cntObs.unobserve(e.target); } });
+}, { threshold: .5 });
+document.querySelectorAll('.counter').forEach(el => cntObs.observe(el));
+
+/* ── Checker tool ── */
+const dz      = document.getElementById('dz');
+const fi      = document.getElementById('fi');
+const fchip   = document.getElementById('fchip');
+const fname   = document.getElementById('fname');
+const runBtn  = document.getElementById('runBtn');
+const bspin   = document.getElementById('bspin');
+const bico    = document.getElementById('bico');
+const cerr    = document.getElementById('cerr');
+const cload   = document.getElementById('cload');
+const cres    = document.getElementById('cres');
+const rban    = document.getElementById('rban');
+const rpills  = document.getElementById('rpills');
+const rlist   = document.getElementById('rlist');
+
+let selFile = null;
+
+function setFile(f) {
+  if (!f || !f.name.endsWith('.net')) { showErr('Only .net files are accepted.'); return; }
+  selFile = f;
+  fname.textContent = f.name;
+  fchip.classList.add('show');
+  runBtn.disabled = false;
+  hideErr();
+  cres.style.display = 'none';
+}
+
+fi.addEventListener('change', () => { if (fi.files[0]) setFile(fi.files[0]); });
+dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('over'));
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('over'); if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]); });
+runBtn.addEventListener('click', runChecks);
+
+async function runChecks() {
+  if (!selFile) return;
+  setLoading(true); hideErr(); cres.style.display = 'none';
+  const form = new FormData(); form.append('file', selFile);
+  try {
+    const res = await fetch('/check', {method:'POST', body:form});
+    const data = await res.json();
+    if (!res.ok) { showErr(data.detail || `Server error ${res.status}`); return; }
+    renderResults(data);
+  } catch { showErr('Could not reach the server. Is it running?'); }
+  finally   { setLoading(false); }
+}
+
+function setLoading(on) {
+  runBtn.disabled = on;
+  runBtn.classList.toggle('loading', on);
+  bspin.style.display = on ? 'block' : 'none';
+  bico.style.display  = on ? 'none'  : 'block';
+  cload.style.display = on ? 'flex'  : 'none';
+}
+function showErr(m) { cerr.textContent = m; cerr.style.display = 'block'; }
+function hideErr()  { cerr.style.display = 'none'; }
+
+function renderResults(data) {
+  const total = data.results.length, passed = data.results.filter(r=>r.passed).length;
+  const errs  = data.error_count, warns = data.warning_count;
+
+  rban.className = 'rban ' + (data.passed ? 'pass' : 'fail');
+  rban.innerHTML = data.passed
+    ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>Ready to manufacture — all critical checks passed`
+    : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>Not ready &mdash; ${errs} error${errs!==1?'s':''} must be resolved`;
+
+  rpills.innerHTML = [
+    ['var(--text3)', total,  'checks'],
+    ['var(--green)', passed, 'passed'],
+    ['var(--red)',   errs,   `error${errs!==1?'s':''}`],
+    ['var(--yellow)',warns,  `warning${warns!==1?'s':''}`],
+  ].map(([c,n,l]) => `<div class="rpill"><div class="pdot" style="background:${c}"></div><span class="pn">${n}</span> ${l}</div>`).join('');
+
+  rlist.innerHTML = '';
+  data.results.forEach(r => rlist.appendChild(buildCard(r)));
+  cres.style.display = 'flex';
+  setTimeout(() => cres.scrollIntoView({behavior:'smooth',block:'nearest'}), 80);
+}
+
+function cardCls(r) { return r.passed ? 'pass' : r.severity==='error' ? 'error' : r.severity==='warning' ? 'warn' : 'info'; }
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function buildCard(r) {
+  const cls = cardCls(r);
+  const lbl = r.passed ? 'Pass' : r.severity==='error' ? 'Error' : r.severity==='warning' ? 'Warning' : 'Info';
+  const d = document.createElement('div'); d.className = 'rc ' + cls;
+  const meta = [
+    r.component ? `<span class="mtag"><span class="mk">cmp </span>${esc(r.component)}</span>` : '',
+    r.net       ? `<span class="mtag"><span class="mk">net </span>${esc(r.net)}</span>` : '',
+  ].join('');
+  const sugg = r.suggestion ? `<div class="rsugg"><span class="si">💡</span><span>${esc(r.suggestion)}</span></div>` : '';
+  d.innerHTML = `<div class="rch"><span class="rbdg">${lbl}</span><span class="rcn">${esc(r.check_id)}</span></div><div class="rcm">${esc(r.message)}</div>${meta?`<div class="rmeta">${meta}</div>`:''}${sugg}`;
+  return d;
+}
+
+/* ── Pricing notify form ── */
+function notifySubmit() {
+  const em = document.getElementById('nemail').value.trim();
+  if (!em || !em.includes('@')) { document.getElementById('nemail').focus(); return; }
+  document.getElementById('nbtn').disabled = true;
+  document.getElementById('nbtn').textContent = 'Done!';
+  document.getElementById('nsuc').style.display = 'flex';
+}
+</script>
+</body>
+</html>
