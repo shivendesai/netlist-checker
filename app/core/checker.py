@@ -50,7 +50,7 @@ def print_report(report):
     print(f"{'─' * 60}")
 
     for r in report.results:
-        sym    = SEVERITY_SYMBOL[r.severity]
+        sym    = "✔" if r.passed else SEVERITY_SYMBOL[r.severity]
         status = "PASS" if r.passed else "FAIL"
         print(f"\n  {sym} [{status}] {r.check_id}")
         print(f"     {r.message}")
