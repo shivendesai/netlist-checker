@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from app.api.routes.ai import router as ai_router
 from app.api.routes.netlist import router as netlist_router
 
 app = FastAPI(title="netlist-checker")
@@ -19,6 +20,7 @@ def index():
 
 
 app.include_router(netlist_router)
+app.include_router(ai_router)
 
 
 if __name__ == "__main__":
