@@ -1019,9 +1019,12 @@ burger.addEventListener('click', () => navMob.classList.toggle('open'));
 function closeMob() { navMob.classList.remove('open'); }
 
 /* ── Supabase init ── */
+// Auth tokens are stored in sessionStorage, which the browser clears automatically
+// when the tab or browser window is closed — no session persists across opens.
 const sb = window.supabase.createClient(
   'https://cowrumdknninkvldekhd.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNvd3J1bWRrbm5pbmt2bGRla2hkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyODMyMjIsImV4cCI6MjA5NTg1OTIyMn0.oqiY1-2YwQxZFpqAeUvdr-1vRZAy_Rurv9T9f9fcPEM'
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNvd3J1bWRrbm5pbmt2bGRla2hkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyODMyMjIsImV4cCI6MjA5NTg1OTIyMn0.oqiY1-2YwQxZFpqAeUvdr-1vRZAy_Rurv9T9f9fcPEM',
+  { auth: { storage: window.sessionStorage, autoRefreshToken: true, persistSession: true } }
 );
 
 sb.auth.getSession().then(({ data: { session } }) => {
@@ -1040,6 +1043,14 @@ sb.auth.onAuthStateChange((event, session) => {
   updateNavAuth();
   if (event === 'SIGNED_IN' && curPage !== 'checker' && curPage !== 'history') go('checker');
   if (event === 'SIGNED_OUT') { clearAuthFields(); if (curPage === 'history' || curPage === 'checker') go('home'); }
+});
+
+// Best-effort server-side token revocation when the page unloads.
+// sessionStorage is cleared by the browser automatically on tab/window close,
+// so even if this async call doesn't finish in time, the stored session is gone
+// and the user will be treated as signed out on the next visit.
+window.addEventListener('pagehide', () => {
+  if (currentSession) try { sb.auth.signOut(); } catch (_) {}
 });
 
 function updateNavAuth() {
