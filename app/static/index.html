@@ -354,6 +354,55 @@
     .sl:hover { color:var(--green); border-color:var(--green); box-shadow:0 0 10px var(--glow); }
     .sl svg { width:14px; height:14px; }
 
+    /* ── Nav user state ── */
+    .nav-user { font-size:11px; color:var(--text2); letter-spacing:.3px; max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+    /* ════════════ AUTH PAGE ════════════ */
+    .auth-wrap { padding:calc(var(--nav-h) + 80px) 24px 100px; min-height:100vh; display:flex; align-items:center; justify-content:center; }
+    .auth-card { width:100%; max-width:420px; background:var(--surface); border:1px solid var(--border); }
+    .auth-tabs { display:flex; border-bottom:1px solid var(--border); }
+    .auth-tab { flex:1; padding:13px; font-size:12px; font-weight:700; letter-spacing:.8px; text-transform:uppercase; cursor:pointer; background:transparent; border:none; color:var(--text2); font-family:'JetBrains Mono',monospace; transition:color .15s,background .15s; border-bottom:2px solid transparent; margin-bottom:-1px; }
+    .auth-tab.active { color:var(--green); border-bottom-color:var(--green); background:rgba(0,255,65,.04); }
+    .auth-tab:hover:not(.active) { color:var(--text); background:rgba(255,255,255,.02); }
+    .auth-body { padding:26px; }
+    .auth-field { margin-bottom:16px; }
+    .auth-field label { display:block; font-size:10px; font-weight:700; letter-spacing:.8px; text-transform:uppercase; color:var(--text3); margin-bottom:7px; }
+    .auth-input { width:100%; padding:9px 13px; background:rgba(255,255,255,.04); border:1px solid var(--border); color:var(--text); font-size:13px; font-family:'JetBrains Mono',monospace; outline:none; transition:border-color .2s; }
+    .auth-input:focus { border-color:var(--green); box-shadow:0 0 8px rgba(0,255,65,.1); }
+    .auth-input::placeholder { color:var(--text3); }
+    .auth-submit { width:100%; margin-top:6px; padding:11px; background:transparent; color:var(--green); border:1px solid var(--green); font-size:12px; font-weight:700; font-family:'JetBrains Mono',monospace; cursor:pointer; letter-spacing:1px; text-transform:uppercase; transition:background .2s,box-shadow .2s; }
+    .auth-submit:hover:not(:disabled) { background:rgba(0,255,65,.1); box-shadow:0 0 16px var(--glow); }
+    .auth-submit:disabled { opacity:.35; cursor:not-allowed; }
+    .auth-msg { font-size:12px; padding:9px 13px; margin-top:12px; font-family:'JetBrains Mono',monospace; display:none; }
+    .auth-err { background:rgba(255,64,64,.07); border:1px solid rgba(255,64,64,.2); color:#ff8080; }
+    .auth-suc { background:rgba(0,255,65,.07); border:1px solid rgba(0,255,65,.2); color:var(--green); }
+
+    /* ════════════ HISTORY PAGE ════════════ */
+    .history-wrap { padding:calc(var(--nav-h) + 52px) 24px 80px; min-height:100vh; display:flex; flex-direction:column; align-items:center; }
+    .history-hdr { text-align:center; margin-bottom:32px; max-width:700px; }
+    .history-hdr h1 { font-size:clamp(20px,3vw,30px); font-weight:700; letter-spacing:-.2px; margin-bottom:8px; }
+    .history-hdr p { font-size:13px; color:var(--text2); }
+    .hist-wrap { width:100%; max-width:920px; }
+    .hist-table { width:100%; border:1px solid var(--border); background:var(--surface); }
+    .hist-head { display:grid; grid-template-columns:1fr 150px 76px 52px 52px 28px; padding:9px 14px; border-bottom:1px solid var(--border); background:rgba(0,255,65,.04); font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--text3); gap:8px; }
+    .hist-row { display:grid; grid-template-columns:1fr 150px 76px 52px 52px 28px; padding:11px 14px; border-bottom:1px solid var(--border); cursor:pointer; transition:background .15s; font-size:12.5px; align-items:center; gap:8px; }
+    .hist-row:last-child { border-bottom:none; }
+    .hist-row:hover { background:var(--surface2); }
+    .hist-row.open { background:var(--surface2); border-bottom-color:transparent; }
+    .hist-file { font-weight:600; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+    .hist-date { color:var(--text2); font-size:11px; }
+    .hist-status { font-size:10px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; padding:2px 7px; border:1px solid transparent; display:inline-block; }
+    .hist-status.pass { border-color:rgba(0,255,65,.3); color:var(--green); }
+    .hist-status.fail { border-color:rgba(255,64,64,.3); color:var(--red); }
+    .hist-num { color:var(--text2); font-size:12px; }
+    .hist-chevron { color:var(--text3); font-size:11px; text-align:right; transition:transform .18s; }
+    .hist-row.open .hist-chevron { transform:rotate(180deg); }
+    .hist-detail { display:none; padding:12px 14px; border-bottom:1px solid var(--border); background:var(--bg2); }
+    .hist-detail.open { display:block; }
+    .hist-empty { padding:48px 24px; text-align:center; font-size:12.5px; color:var(--text3); }
+    .hist-loading { padding:48px 24px; text-align:center; font-size:12px; color:var(--text2); display:flex; flex-direction:column; align-items:center; gap:12px; }
+    @media(max-width:640px) { .hist-head,.hist-row { grid-template-columns:1fr 76px 52px 52px 28px; } .hist-date { display:none; } }
+
     /* ════════════ CONTACT PAGE ════════════ */
     .contact-wrap { padding:calc(var(--nav-h) + 80px) 24px 100px; min-height:100vh; display:flex; align-items:center; justify-content:center; }
     .contact-card { width:100%; max-width:500px; background:var(--surface); border:1px solid var(--border); padding:44px; text-align:center; }
@@ -383,6 +432,7 @@
       .hero-ctas{flex-direction:column;align-items:center}
     }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -403,9 +453,10 @@
       <li><a data-page="pricing"              onclick="go('pricing')">pricing</a></li>
       <li><a data-page="docs"                 onclick="go('docs')">docs</a></li>
       <li><a data-page="contact"              onclick="go('contact')">contact</a></li>
+      <li class="nav-history" style="display:none"><a data-page="history" onclick="go('history')">history</a></li>
     </ul>
-    <div class="nav-actions">
-      <button class="btn-p" onclick="go('checker')">[ run checks ]</button>
+    <div class="nav-actions" id="nav-actions">
+      <button class="btn-p" onclick="go('auth')">[ sign in ]</button>
     </div>
     <button class="nav-burger" id="burger" aria-label="Menu">
       <div class="hbar"></div><div class="hbar"></div><div class="hbar"></div>
@@ -419,7 +470,8 @@
   <a onclick="go('pricing');closeMob()">pricing</a>
   <a onclick="go('docs');closeMob()">docs</a>
   <a onclick="go('contact');closeMob()">contact</a>
-  <a onclick="go('checker');closeMob()" style="margin-top:10px;text-align:center;padding:10px 0;border:1px solid var(--green);color:var(--green);font-size:12px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;">[ run checks ]</a>
+  <a class="mob-history" style="display:none" onclick="go('history');closeMob()">history</a>
+  <a id="mob-auth-btn" onclick="go('auth');closeMob()" style="margin-top:10px;text-align:center;padding:10px 0;border:1px solid var(--green);color:var(--green);font-size:12px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;">[ sign in ]</a>
 </div>
 
 <!-- ══════════════════════════════════════
@@ -775,6 +827,88 @@
 </div>
 
 <!-- ══════════════════════════════════════
+     PAGE: AUTH
+══════════════════════════════════════ -->
+<div class="page" id="pg-auth">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tab-signin" onclick="switchAuthTab('signin')">Sign In</button>
+        <button class="auth-tab" id="tab-signup" onclick="switchAuthTab('signup')">Sign Up</button>
+      </div>
+
+      <div class="auth-body" id="auth-body-signin">
+        <div class="auth-field"><label>Email</label><input class="auth-input" type="email" id="signin-email" placeholder="you@example.com" autocomplete="email" /></div>
+        <div class="auth-field"><label>Password</label><input class="auth-input" type="password" id="signin-password" placeholder="••••••••" autocomplete="current-password" /></div>
+        <button class="auth-submit" id="signin-btn" onclick="doSignIn()">[ sign in ]</button>
+        <div id="signin-msg" class="auth-msg"></div>
+      </div>
+
+      <div class="auth-body" id="auth-body-signup" style="display:none">
+        <div class="auth-field"><label>Email</label><input class="auth-input" type="email" id="signup-email" placeholder="you@example.com" autocomplete="email" /></div>
+        <div class="auth-field"><label>Password</label><input class="auth-input" type="password" id="signup-password" placeholder="min. 6 characters" autocomplete="new-password" /></div>
+        <button class="auth-submit" id="signup-btn" onclick="doSignUp()">[ create account ]</button>
+        <div id="signup-msg" class="auth-msg"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="ft">
+    <div class="fti">
+      <div class="ftb">
+        <div class="nav-logo" onclick="go('home')" style="cursor:pointer"><div class="logo-mark">&gt;_</div><span class="logo-text">netlist-checker</span></div>
+        <p class="fttag">Automated DRC for KiCad netlists. Catch errors before they cost you.</p>
+      </div>
+      <div class="ftcols">
+        <div class="ftcol"><h4>Navigate</h4><ul><li><a onclick="go('home')">Home</a></li><li><a onclick="go('checker')">Checker</a></li><li><a onclick="go('pricing')">Pricing</a></li><li><a onclick="go('docs')">Docs</a></li></ul></div>
+        <div class="ftcol"><h4>Resources</h4><ul><li><a onclick="go('docs')">API Reference</a></li><li><a href="https://github.com" target="_blank" rel="noopener">GitHub</a></li><li><a onclick="go('contact')">Contact</a></li></ul></div>
+      </div>
+    </div>
+    <div class="ftbot"><p class="ftcopy">&copy; 2026 Netlist Checker. All rights reserved.</p></div>
+  </footer>
+</div>
+
+<!-- ══════════════════════════════════════
+     PAGE: HISTORY
+══════════════════════════════════════ -->
+<div class="page" id="pg-history">
+  <div class="history-wrap">
+    <div class="history-hdr">
+      <div class="eyebrow">history</div>
+      <h1>Check History</h1>
+      <p>Your past netlist checks, ordered by date.</p>
+    </div>
+    <div class="hist-wrap">
+      <div class="hist-loading" id="hist-loading">
+        <div class="lring"></div>
+        <span>// loading history&hellip;</span>
+      </div>
+      <div class="hist-table" id="hist-table" style="display:none">
+        <div class="hist-head">
+          <div>File</div><div>Date</div><div>Status</div><div>Errors</div><div>Warns</div><div></div>
+        </div>
+        <div id="hist-body"></div>
+      </div>
+      <div class="hist-empty" id="hist-empty" style="display:none">// no checks yet</div>
+    </div>
+  </div>
+
+  <footer class="ft">
+    <div class="fti">
+      <div class="ftb">
+        <div class="nav-logo" onclick="go('home')" style="cursor:pointer"><div class="logo-mark">&gt;_</div><span class="logo-text">netlist-checker</span></div>
+        <p class="fttag">Automated DRC for KiCad netlists. Catch errors before they cost you.</p>
+      </div>
+      <div class="ftcols">
+        <div class="ftcol"><h4>Navigate</h4><ul><li><a onclick="go('home')">Home</a></li><li><a onclick="go('checker')">Checker</a></li><li><a onclick="go('pricing')">Pricing</a></li><li><a onclick="go('docs')">Docs</a></li></ul></div>
+        <div class="ftcol"><h4>Resources</h4><ul><li><a onclick="go('docs')">API Reference</a></li><li><a href="https://github.com" target="_blank" rel="noopener">GitHub</a></li><li><a onclick="go('contact')">Contact</a></li></ul></div>
+      </div>
+    </div>
+    <div class="ftbot"><p class="ftcopy">&copy; 2026 Netlist Checker. All rights reserved.</p></div>
+  </footer>
+</div>
+
+<!-- ══════════════════════════════════════
      PAGE: CONTACT
 ══════════════════════════════════════ -->
 <div class="page" id="pg-contact">
@@ -805,10 +939,20 @@
 </div>
 
 <script>
+/* ── Auth state ── */
+let currentUser = null;
+let currentSession = null;
+let sessionChecked = false;
+
 /* ── Page routing ── */
 let curPage = 'home';
 
 function go(id) {
+  // Redirect protected pages to auth when not signed in (only after session is resolved)
+  if (sessionChecked && !currentUser && (id === 'checker' || id === 'history')) { id = 'auth'; }
+  // Redirect away from auth if already signed in
+  if (currentUser && id === 'auth') { id = 'checker'; }
+
   if (id === curPage) { window.scrollTo({top:0,behavior:'smooth'}); return; }
   const prev = document.getElementById('pg-' + curPage);
   const next = document.getElementById('pg-' + id);
@@ -832,6 +976,8 @@ function go(id) {
   setTimeout(() => {
     next.querySelectorAll('.reveal').forEach(el => revObs.observe(el));
   }, 30);
+
+  if (id === 'history') loadHistory();
 }
 
 /* ── Nav scroll + hamburger ── */
@@ -842,6 +988,155 @@ const navMob = document.getElementById('navMob');
 window.addEventListener('scroll', () => nav.classList.toggle('scrolled', scrollY > 8), {passive:true});
 burger.addEventListener('click', () => navMob.classList.toggle('open'));
 function closeMob() { navMob.classList.remove('open'); }
+
+/* ── Supabase init ── */
+const sb = window.supabase.createClient(
+  'https://cowrumdknninkvldekhd.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNvd3J1bWRrbm5pbmt2bGRla2hkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyODMyMjIsImV4cCI6MjA5NTg1OTIyMn0.oqiY1-2YwQxZFpqAeUvdr-1vRZAy_Rurv9T9f9fcPEM'
+);
+
+sb.auth.getSession().then(({ data: { session } }) => {
+  currentUser = session?.user ?? null;
+  currentSession = session ?? null;
+  sessionChecked = true;
+  updateNavAuth();
+});
+
+sb.auth.onAuthStateChange((event, session) => {
+  currentUser = session?.user ?? null;
+  currentSession = session ?? null;
+  updateNavAuth();
+  if (event === 'SIGNED_OUT' && (curPage === 'history' || curPage === 'checker')) go('home');
+});
+
+function updateNavAuth() {
+  const navActions = document.getElementById('nav-actions');
+  const mobBtn = document.getElementById('mob-auth-btn');
+  document.querySelectorAll('.nav-history, .mob-history').forEach(el => {
+    el.style.display = currentUser ? '' : 'none';
+  });
+  if (currentUser) {
+    const email = currentUser.email;
+    const short = email.length > 22 ? email.slice(0, 22) + '…' : email;
+    navActions.innerHTML = `<span class="nav-user">${short}</span><button class="btn-g" onclick="doSignOut()">[ sign out ]</button>`;
+    if (mobBtn) { mobBtn.textContent = '[ sign out ]'; mobBtn.onclick = () => { doSignOut(); closeMob(); }; }
+  } else {
+    navActions.innerHTML = `<button class="btn-p" onclick="go('auth')">[ sign in ]</button>`;
+    if (mobBtn) { mobBtn.textContent = '[ sign in ]'; mobBtn.onclick = () => { go('auth'); closeMob(); }; }
+  }
+  document.querySelectorAll('.nav-links a[data-page]').forEach(a => {
+    a.classList.toggle('nav-act', a.dataset.page === curPage);
+  });
+}
+
+/* ── Auth functions ── */
+function switchAuthTab(tab) {
+  document.getElementById('auth-body-signin').style.display = tab === 'signin' ? 'block' : 'none';
+  document.getElementById('auth-body-signup').style.display = tab === 'signup' ? 'block' : 'none';
+  document.getElementById('tab-signin').classList.toggle('active', tab === 'signin');
+  document.getElementById('tab-signup').classList.toggle('active', tab === 'signup');
+  document.getElementById('signin-msg').style.display = 'none';
+  document.getElementById('signup-msg').style.display = 'none';
+}
+
+async function doSignIn() {
+  const email = document.getElementById('signin-email').value.trim();
+  const password = document.getElementById('signin-password').value;
+  if (!email || !password) return;
+  const btn = document.getElementById('signin-btn');
+  btn.disabled = true; btn.textContent = '[ signing in... ]';
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  btn.disabled = false; btn.textContent = '[ sign in ]';
+  if (error) { showAuthMsg('signin', error.message, 'err'); return; }
+  currentUser = data.user; currentSession = data.session;
+  updateNavAuth();
+  go('checker');
+}
+
+async function doSignUp() {
+  const email = document.getElementById('signup-email').value.trim();
+  const password = document.getElementById('signup-password').value;
+  if (!email || !password) return;
+  const btn = document.getElementById('signup-btn');
+  btn.disabled = true; btn.textContent = '[ creating account... ]';
+  const { error } = await sb.auth.signUp({ email, password });
+  btn.disabled = false; btn.textContent = '[ create account ]';
+  if (error) { showAuthMsg('signup', error.message, 'err'); return; }
+  showAuthMsg('signup', 'Check your email to confirm your account.', 'suc');
+}
+
+async function doSignOut() {
+  await sb.auth.signOut();
+  currentUser = null; currentSession = null;
+  updateNavAuth();
+  go('home');
+}
+
+function showAuthMsg(form, msg, type) {
+  const el = document.getElementById(form + '-msg');
+  el.textContent = msg;
+  el.className = 'auth-msg auth-' + type;
+  el.style.display = 'block';
+}
+
+/* ── History ── */
+async function loadHistory() {
+  if (!currentSession) return;
+  document.getElementById('hist-loading').style.display = 'flex';
+  document.getElementById('hist-table').style.display = 'none';
+  document.getElementById('hist-empty').style.display = 'none';
+  try {
+    const res = await fetch('/history', {
+      headers: { 'Authorization': `Bearer ${currentSession.access_token}` }
+    });
+    const rows = await res.json();
+    if (!res.ok) throw new Error(rows.detail || 'Load failed');
+    renderHistory(rows);
+  } catch (e) {
+    const el = document.getElementById('hist-loading');
+    el.innerHTML = `<span style="color:var(--red);font-size:12px">// error: ${esc(e.message)}</span>`;
+  }
+}
+
+function renderHistory(rows) {
+  document.getElementById('hist-loading').style.display = 'none';
+  const body = document.getElementById('hist-body');
+  body.innerHTML = '';
+  if (!rows.length) { document.getElementById('hist-empty').style.display = 'block'; return; }
+  document.getElementById('hist-table').style.display = 'block';
+  rows.forEach(row => {
+    const d = new Date(row.created_at);
+    const dateStr = d.toLocaleDateString(undefined, {month:'short', day:'numeric', year:'numeric'})
+      + ' ' + d.toLocaleTimeString(undefined, {hour:'2-digit', minute:'2-digit'});
+    const stCls = row.passed ? 'pass' : 'fail';
+    const stTxt = row.passed ? 'PASS' : 'FAIL';
+
+    const rowEl = document.createElement('div');
+    rowEl.className = 'hist-row';
+    rowEl.innerHTML = `<div class="hist-file">${esc(row.source_file)}</div><div class="hist-date">${dateStr}</div><div><span class="hist-status ${stCls}">${stTxt}</span></div><div class="hist-num">${row.error_count}</div><div class="hist-num">${row.warning_count}</div><div class="hist-chevron">&#9660;</div>`;
+
+    const detailEl = document.createElement('div');
+    detailEl.className = 'hist-detail';
+    const results = row.results || [];
+    if (results.length) {
+      const cards = results.map(r => {
+        const cls = r.passed ? 'pass' : r.severity === 'error' ? 'error' : r.severity === 'warning' ? 'warn' : 'info';
+        const lbl = r.passed ? 'Pass' : r.severity === 'error' ? 'Error' : r.severity === 'warning' ? 'Warning' : 'Info';
+        return `<div class="rc ${cls} visible"><div class="rch"><span class="rbdg">${lbl}</span><span class="rcn">${esc(r.check_id)}</span></div><div class="rcm">${esc(r.message)}</div></div>`;
+      }).join('');
+      detailEl.innerHTML = `<div style="display:flex;flex-direction:column;gap:5px">${cards}</div>`;
+    } else {
+      detailEl.innerHTML = '<span style="font-size:12px;color:var(--text3)">No result detail available.</span>';
+    }
+
+    rowEl.addEventListener('click', () => {
+      rowEl.classList.toggle('open');
+      detailEl.classList.toggle('open');
+    });
+    body.appendChild(rowEl);
+    body.appendChild(detailEl);
+  });
+}
 
 /* ── Matrix rain ── */
 (function () {
@@ -985,8 +1280,10 @@ async function runChecks() {
   if (!selFile) return;
   setLoading(true); hideErr(); cres.style.display = 'none';
   const form = new FormData(); form.append('file', selFile);
+  const hdrs = {};
+  if (currentSession) hdrs['Authorization'] = `Bearer ${currentSession.access_token}`;
   try {
-    const res = await fetch('/check', {method:'POST', body:form});
+    const res = await fetch('/check', {method:'POST', body:form, headers:hdrs});
     const data = await res.json();
     if (!res.ok) { showErr(data.detail || `Server error ${res.status}`); return; }
     renderResults(data);

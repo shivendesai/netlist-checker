@@ -6,7 +6,13 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.api.routes.ai import router as ai_router
+from app.api.routes.history import router as history_router
 from app.api.routes.netlist import router as netlist_router
+
+# Required environment variables:
+#   SUPABASE_URL      — Supabase project URL
+#   SUPABASE_ANON_KEY — Supabase anon/public key
+#   GROQ_API_KEY      — Groq API key for AI assistant
 
 app = FastAPI(title="netlist-checker")
 
@@ -21,6 +27,7 @@ def index():
 
 app.include_router(netlist_router)
 app.include_router(ai_router)
+app.include_router(history_router)
 
 
 if __name__ == "__main__":

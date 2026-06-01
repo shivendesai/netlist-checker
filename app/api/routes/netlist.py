@@ -1,6 +1,8 @@
 import dataclasses
+import os
+from typing import Optional
 
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, HTTPException, UploadFile, File, Header
 
 from app.core.checker import run_checks
 from app.core.parser import parse
@@ -20,8 +22,33 @@ def _report_to_dict(report):
     return d
 
 
+def _save_history(token: str, filename: str, report, results: list) -> None:
+    url = os.environ.get("SUPABASE_URL")
+    key = os.environ.get("SUPABASE_ANON_KEY")
+    if not url or not key:
+        return
+    try:
+        from supabase import create_client
+        client = create_client(url, key)
+        user_id = client.auth.get_user(jwt=token).user.id
+        client.postgrest.auth(token)
+        client.table("check_history").insert({
+            "user_id": user_id,
+            "source_file": filename,
+            "passed": report.passed,
+            "error_count": report.error_count,
+            "warning_count": report.warning_count,
+            "results": results,
+        }).execute()
+    except Exception:
+        pass  # Never fail the check because of a history write error
+
+
 @router.post("/check")
-async def check_netlist(file: UploadFile = File(...)):
+async def check_netlist(
+    file: UploadFile = File(...),
+    authorization: Optional[str] = Header(None),
+):
     if not file.filename.endswith(".net"):
         raise HTTPException(status_code=400, detail="Only .net files are accepted")
 
@@ -37,4 +64,10 @@ async def check_netlist(file: UploadFile = File(...)):
         raise HTTPException(status_code=422, detail=f"Parse error: {exc}")
 
     report = run_checks(netlist, source_file=file.filename)
-    return _report_to_dict(report)
+    result_dict = _report_to_dict(report)
+
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization.split(" ", 1)[1]
+        _save_history(token, file.filename, report, result_dict["results"])
+
+    return result_dict
