@@ -285,7 +285,8 @@
     .pcard:not(.locked):hover { background:var(--surface2); }
     .pcard.feat { background:rgba(0,255,65,.03); }
     .pcard.feat:not(.locked):hover { background:rgba(0,255,65,.06); }
-    .cs-ov { position:absolute; inset:0; z-index:3; background:rgba(8,8,8,.82); display:flex; align-items:center; justify-content:center; flex-direction:column; gap:8px; }
+    .cs-ov { position:absolute; inset:0; z-index:3; background:rgba(8,8,8,.92); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); display:flex; align-items:center; justify-content:center; flex-direction:column; gap:8px; }
+    .pcard.locked > *:not(.cs-ov) { filter:blur(5px); user-select:none; pointer-events:none; }
     .cs-lock { width:38px; height:38px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; color:var(--text3); }
     .cs-lock svg { width:17px; height:17px; }
     .cs-lbl { font-size:11px; font-weight:600; color:var(--text3); letter-spacing:.5px; }
@@ -353,6 +354,16 @@
     .sl:hover { color:var(--green); border-color:var(--green); box-shadow:0 0 10px var(--glow); }
     .sl svg { width:14px; height:14px; }
 
+    /* ════════════ CONTACT PAGE ════════════ */
+    .contact-wrap { padding:calc(var(--nav-h) + 80px) 24px 100px; min-height:100vh; display:flex; align-items:center; justify-content:center; }
+    .contact-card { width:100%; max-width:500px; background:var(--surface); border:1px solid var(--border); padding:44px; text-align:center; }
+    .contact-card h1 { font-size:clamp(18px,2.5vw,26px); font-weight:700; margin-bottom:14px; }
+    .contact-card .contact-sub { font-size:13px; color:var(--text2); line-height:1.75; margin-bottom:28px; }
+    .contact-email { display:block; font-size:15px; font-weight:600; color:var(--green); letter-spacing:.3px; margin-bottom:16px; text-decoration:none; }
+    .contact-email:hover { text-shadow:0 0 12px var(--green); }
+    .contact-note { font-size:12px; color:var(--text3); }
+    .pricing-soon { text-align:center; font-size:12px; color:var(--text3); margin-top:20px; letter-spacing:.3px; }
+
     /* ════════════ RESPONSIVE ════════════ */
     @media(max-width:960px) {
       .fgrid{grid-template-columns:repeat(2,1fr)}
@@ -391,6 +402,7 @@
       <li><a data-page="checker"              onclick="go('checker')">checker</a></li>
       <li><a data-page="pricing"              onclick="go('pricing')">pricing</a></li>
       <li><a data-page="docs"                 onclick="go('docs')">docs</a></li>
+      <li><a data-page="contact"              onclick="go('contact')">contact</a></li>
     </ul>
     <div class="nav-actions">
       <button class="btn-p" onclick="go('checker')">[ run checks ]</button>
@@ -406,6 +418,7 @@
   <a onclick="go('checker');closeMob()">checker</a>
   <a onclick="go('pricing');closeMob()">pricing</a>
   <a onclick="go('docs');closeMob()">docs</a>
+  <a onclick="go('contact');closeMob()">contact</a>
   <a onclick="go('checker');closeMob()" style="margin-top:10px;text-align:center;padding:10px 0;border:1px solid var(--green);color:var(--green);font-size:12px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;">[ run checks ]</a>
 </div>
 
@@ -449,7 +462,7 @@
       <div class="fhdr reveal">
         <div class="eyebrow">features</div>
         <h2 class="sec-title">Eight automated checks.<br>Zero configuration.</h2>
-        <p class="sec-sub">Every check runs server-side against your raw <span class="ic">.net</span> export. No plugins, no accounts, no setup required.</p>
+        <p class="sec-sub">Every check runs server-side against your exported <span class="ic">.net</span> file. No installation required.</p>
       </div>
       <div class="fgrid">
         <div class="fc reveal" style="--i:0"><div class="fci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/></svg></div><h3>Instant Analysis</h3><p>Results in under a second. Upload and get a complete DRC report without waiting for any build queue.</p></div>
@@ -498,7 +511,7 @@
           <ul>
             <li><a onclick="go('docs')">API Reference</a></li>
             <li><a href="https://github.com" target="_blank" rel="noopener">GitHub</a></li>
-            <li><a href="mailto:contact@netlistchecker.com">Contact</a></li>
+            <li><a onclick="go('contact')">Contact</a></li>
           </ul>
         </div>
       </div>
@@ -585,7 +598,7 @@
       </div>
       <div class="ftcols">
         <div class="ftcol"><h4>Navigate</h4><ul><li><a onclick="go('home')">Home</a></li><li><a onclick="go('checker')">Checker</a></li><li><a onclick="go('pricing')">Pricing</a></li><li><a onclick="go('docs')">Docs</a></li></ul></div>
-        <div class="ftcol"><h4>Resources</h4><ul><li><a onclick="go('docs')">API Reference</a></li><li><a href="https://github.com" target="_blank" rel="noopener">GitHub</a></li><li><a href="mailto:contact@netlistchecker.com">Contact</a></li></ul></div>
+        <div class="ftcol"><h4>Resources</h4><ul><li><a onclick="go('docs')">API Reference</a></li><li><a href="https://github.com" target="_blank" rel="noopener">GitHub</a></li><li><a onclick="go('contact')">Contact</a></li></ul></div>
       </div>
     </div>
     <div class="ftbot">
@@ -605,7 +618,7 @@
   <div class="pricing-wrap">
     <div class="phdr reveal">
       <div class="eyebrow">pricing</div>
-      <h2 class="sec-title">Simple, transparent pricing</h2>
+      <h2 class="sec-title">Pricing</h2>
       <p class="sec-sub">Free tier includes full access to all 8 design rule checks. Pro and Team tiers are coming soon.</p>
     </div>
 
@@ -662,15 +675,7 @@
       </div>
     </div>
 
-    <div class="notify-sec reveal">
-      <h3>Get notified when Pro launches</h3>
-      <p>Leave your email and we'll let you know when Pro and Team tiers are available.</p>
-      <div class="nform">
-        <input class="ninput" type="email" id="nemail" placeholder="you@company.com" />
-        <button class="nbtn" id="nbtn" onclick="notifySubmit()">[ notify me ]</button>
-      </div>
-      <div class="nsuc" id="nsuc"><span style="color:var(--green)">&#10003;</span> You're on the list.</div>
-    </div>
+    <p class="pricing-soon">// Pro and Team tiers coming soon.</p>
   </div>
 
   <footer class="ft">
@@ -681,7 +686,7 @@
       </div>
       <div class="ftcols">
         <div class="ftcol"><h4>Navigate</h4><ul><li><a onclick="go('home')">Home</a></li><li><a onclick="go('checker')">Checker</a></li><li><a onclick="go('pricing')">Pricing</a></li><li><a onclick="go('docs')">Docs</a></li></ul></div>
-        <div class="ftcol"><h4>Resources</h4><ul><li><a onclick="go('docs')">API Reference</a></li><li><a href="https://github.com" target="_blank" rel="noopener">GitHub</a></li><li><a href="mailto:contact@netlistchecker.com">Contact</a></li></ul></div>
+        <div class="ftcol"><h4>Resources</h4><ul><li><a onclick="go('docs')">API Reference</a></li><li><a href="https://github.com" target="_blank" rel="noopener">GitHub</a></li><li><a onclick="go('contact')">Contact</a></li></ul></div>
       </div>
     </div>
     <div class="ftbot">
@@ -772,7 +777,42 @@
       </div>
       <div class="ftcols">
         <div class="ftcol"><h4>Navigate</h4><ul><li><a onclick="go('home')">Home</a></li><li><a onclick="go('checker')">Checker</a></li><li><a onclick="go('pricing')">Pricing</a></li><li><a onclick="go('docs')">Docs</a></li></ul></div>
-        <div class="ftcol"><h4>Resources</h4><ul><li><a onclick="go('docs')">API Reference</a></li><li><a href="https://github.com" target="_blank" rel="noopener">GitHub</a></li><li><a href="mailto:contact@netlistchecker.com">Contact</a></li></ul></div>
+        <div class="ftcol"><h4>Resources</h4><ul><li><a onclick="go('docs')">API Reference</a></li><li><a href="https://github.com" target="_blank" rel="noopener">GitHub</a></li><li><a onclick="go('contact')">Contact</a></li></ul></div>
+      </div>
+    </div>
+    <div class="ftbot">
+      <p class="ftcopy">&copy; 2026 Netlist Checker. All rights reserved.</p>
+      <div class="ftsocs">
+        <a class="sl" href="https://github.com" target="_blank" rel="noopener" aria-label="GitHub"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/></svg></a>
+        <a class="sl" href="https://twitter.com" target="_blank" rel="noopener" aria-label="Twitter/X"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<!-- ══════════════════════════════════════
+     PAGE: CONTACT
+══════════════════════════════════════ -->
+<div class="page" id="pg-contact">
+  <div class="contact-wrap">
+    <div class="contact-card">
+      <div class="eyebrow">contact</div>
+      <h1>Get in Touch</h1>
+      <p class="contact-sub">Have questions, feedback, or want to report an issue? We'd love to hear from you.</p>
+      <span class="contact-email">contact@netlistchecker.com</span>
+      <p class="contact-note">We typically respond within 24 hours.</p>
+    </div>
+  </div>
+
+  <footer class="ft">
+    <div class="fti">
+      <div class="ftb">
+        <div class="nav-logo" onclick="go('home')" style="cursor:pointer"><div class="logo-mark">&gt;_</div><span class="logo-text">netlist-checker</span></div>
+        <p class="fttag">Automated DRC for KiCad netlists. Catch errors before they cost you.</p>
+      </div>
+      <div class="ftcols">
+        <div class="ftcol"><h4>Navigate</h4><ul><li><a onclick="go('home')">Home</a></li><li><a onclick="go('checker')">Checker</a></li><li><a onclick="go('pricing')">Pricing</a></li><li><a onclick="go('docs')">Docs</a></li></ul></div>
+        <div class="ftcol"><h4>Resources</h4><ul><li><a onclick="go('docs')">API Reference</a></li><li><a href="https://github.com" target="_blank" rel="noopener">GitHub</a></li><li><a onclick="go('contact')">Contact</a></li></ul></div>
       </div>
     </div>
     <div class="ftbot">
