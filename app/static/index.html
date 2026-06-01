@@ -1120,6 +1120,7 @@ async function doSignIn() {
   currentUser = data.user; currentSession = data.session;
   signInAttempts = 0;
   clearAuthFields();
+  resetChecker();
   updateNavAuth();
   go('checker');
 }
@@ -1145,6 +1146,7 @@ async function doSignUp() {
   }
 
   clearAuthFields();
+  resetChecker();
   if (sess) {
     currentUser = usr; currentSession = sess;
     updateNavAuth();
@@ -1170,6 +1172,7 @@ async function doSignOut() {
   await sb.auth.signOut();
   currentUser = null; currentSession = null;
   clearAuthFields();
+  resetChecker();
   updateNavAuth();
   go('home');
 }
@@ -1190,6 +1193,35 @@ document.getElementById('pg-auth').addEventListener('keydown', e => {
   if (['signup-name','signup-email','signup-confirm-email','signup-password'].includes(id)) { doSignUp(); return; }
   if (['signin-email','signin-password'].includes(id)) doSignIn();
 });
+
+/* ── Checker reset ── */
+function resetChecker() {
+  selFile = null;
+  fi.value = '';
+  fname.textContent = '';
+  fchip.classList.remove('show');
+
+  runBtn.disabled = true;
+  runBtn.classList.remove('loading');
+  bspin.style.display = 'none';
+  bico.style.display = 'block';
+  document.getElementById('runTxt').textContent = '[ RUN CHECKS ]';
+
+  hideErr();
+  cload.style.display = 'none';
+
+  cres.style.display = 'none';
+  rban.className = 'rban'; rban.innerHTML = '';
+  rpills.innerHTML = '';
+  rlist.innerHTML = '';
+
+  chatContext = null;
+  aiPanel.style.display = 'none';
+  Array.from(chatMsgs.children).forEach(el => { if (el !== chatTyping) el.remove(); });
+  chatTyping.style.display = 'none';
+  chatInput.value = '';
+  chatInput.style.height = 'auto';
+}
 
 /* ── History ── */
 async function loadHistory() {
