@@ -129,46 +129,26 @@
 
     /* ════════════ HOME ════════════ */
     #s-hero {
-      background-image: url('https://images.unsplash.com/photo-1518770660439-4636190af475?w=1920&q=80');
-      background-size: cover;
-      background-position: center;
-      background-attachment: fixed;
-      filter: brightness(0.15) saturate(2) hue-rotate(90deg);
       min-height:100vh; display:flex; flex-direction:column;
       align-items:center; justify-content:center; text-align:center;
       padding:calc(var(--nav-h) + 64px) 24px 96px; position:relative;
-      z-index:10;
+      overflow:hidden;
     }
 
-    #s-hero::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: rgba(5, 14, 5, 0.3);
-      z-index: -1;
+    #pcb-canvas {
+      position:absolute; top:0; left:0;
+      width:100%; height:100%;
+      pointer-events:none; z-index:0;
     }
 
-    #pcb-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 1;
-      pointer-events: none;
+    .hero-overlay {
+      position:absolute; inset:0; z-index:1; pointer-events:none;
+      background:radial-gradient(ellipse at center, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.1) 70%);
     }
 
-    #pcb-overlay .trace {
-      stroke-dasharray: 1000;
-      stroke-dashoffset: 1000;
-    }
-
-    #pcb-overlay .pad {
-      opacity: 0;
-    }
-
-    #signal-dot {
-      opacity: 0;
+    #s-hero .hero-badge, #s-hero .hero-hl-wrap, #s-hero .hero-sub,
+    #s-hero .hero-ctas, #s-hero .hmw, #s-hero .hproof {
+      position:relative; z-index:10;
     }
     .hero-badge { display:inline-flex; align-items:center; gap:8px; font-size:11px; font-weight:500; color:var(--green); background:rgba(0,255,65,.05); border:1px solid var(--border); padding:4px 14px; margin-bottom:36px; letter-spacing:.4px; }
     .badge-dot { width:6px; height:6px; border-radius:50%; background:var(--green); animation:bPulse 2s ease-in-out infinite; box-shadow:0 0 5px var(--green); }
@@ -530,67 +510,6 @@
 
 <canvas id="circuit-bg" aria-hidden="true"></canvas>
 <!-- PCB Overlay with animated traces and pads -->
-<svg id="pcb-overlay" viewBox="0 0 1920 1080" aria-hidden="true">
-  <g id="pcb-traces">
-    <!-- 15-20 green glowing traces with right-angle routing -->
-    <line x1="200" y1="200" x2="400" y2="200" stroke="#00ff41" stroke-width="1.5" class="trace"/>
-    <line x1="400" y1="200" x2="400" y2="400" stroke="#00ff41" stroke-width="1.5" class="trace"/>
-
-    <line x1="600" y1="150" x2="800" y2="150" stroke="#00ff41" stroke-width="1.5" class="trace"/>
-    <line x1="800" y1="150" x2="800" y2="350" stroke="#00ff41" stroke-width="1.5" class="trace"/>
-
-    <line x1="1000" y1="250" x2="1200" y2="250" stroke="#00ff41" stroke-width="1.5" class="trace"/>
-    <line x1="1200" y1="250" x2="1200" y2="500" stroke="#00ff41" stroke-width="1.5" class="trace"/>
-
-    <line x1="1400" y1="300" x2="1600" y2="300" stroke="#00ff41" stroke-width="1.5" class="trace"/>
-    <line x1="1600" y1="300" x2="1600" y2="600" stroke="#00ff41" stroke-width="1.5" class="trace"/>
-
-    <line x1="300" y1="550" x2="600" y2="550" stroke="#00ff41" stroke-width="1.5" class="trace"/>
-    <line x1="600" y1="550" x2="600" y2="800" stroke="#00ff41" stroke-width="1.5" class="trace"/>
-
-    <line x1="900" y1="600" x2="1100" y2="600" stroke="#00ff41" stroke-width="1.5" class="trace"/>
-    <line x1="1100" y1="600" x2="1100" y2="900" stroke="#00ff41" stroke-width="1.5" class="trace"/>
-
-    <line x1="1300" y1="700" x2="1500" y2="700" stroke="#00ff41" stroke-width="1.5" class="trace"/>
-    <line x1="1500" y1="700" x2="1500" y2="950" stroke="#00ff41" stroke-width="1.5" class="trace"/>
-
-    <line x1="200" y1="850" x2="500" y2="850" stroke="#00ff41" stroke-width="1.5" class="trace"/>
-    <line x1="500" y1="850" x2="500" y2="950" stroke="#00ff41" stroke-width="1.5" class="trace"/>
-
-    <line x1="700" y1="400" x2="900" y2="400" stroke="#00ff41" stroke-width="1.5" class="trace"/>
-    <line x1="900" y1="400" x2="900" y2="650" stroke="#00ff41" stroke-width="1.5" class="trace"/>
-
-    <line x1="1200" y1="800" x2="1400" y2="800" stroke="#00ff41" stroke-width="1.5" class="trace"/>
-    <line x1="1400" y1="800" x2="1400" y2="950" stroke="#00ff41" stroke-width="1.5" class="trace"/>
-  </g>
-
-  <!-- Pads at line intersections -->
-  <g id="pcb-pads">
-    <circle cx="200" cy="200" r="4" fill="#00ff41" class="pad"/>
-    <circle cx="400" cy="200" r="4" fill="#00ff41" class="pad"/>
-    <circle cx="400" cy="400" r="4" fill="#00ff41" class="pad"/>
-    <circle cx="600" cy="150" r="4" fill="#00ff41" class="pad"/>
-    <circle cx="800" cy="150" r="4" fill="#00ff41" class="pad"/>
-    <circle cx="800" cy="350" r="4" fill="#00ff41" class="pad"/>
-    <circle cx="1000" cy="250" r="4" fill="#00ff41" class="pad"/>
-    <circle cx="1200" cy="250" r="4" fill="#00ff41" class="pad"/>
-    <circle cx="1200" cy="500" r="4" fill="#00ff41" class="pad"/>
-    <circle cx="1400" cy="300" r="4" fill="#00ff41" class="pad"/>
-    <circle cx="1600" cy="300" r="4" fill="#00ff41" class="pad"/>
-    <circle cx="1600" cy="600" r="4" fill="#00ff41" class="pad"/>
-    <circle cx="300" cy="550" r="4" fill="#00ff41" class="pad"/>
-    <circle cx="600" cy="550" r="4" fill="#00ff41" class="pad"/>
-    <circle cx="600" cy="800" r="4" fill="#00ff41" class="pad"/>
-    <circle cx="900" cy="600" r="4" fill="#00ff41" class="pad"/>
-    <circle cx="1100" cy="600" r="4" fill="#00ff41" class="pad"/>
-    <circle cx="1100" cy="900" r="4" fill="#00ff41" class="pad"/>
-    <circle cx="1300" cy="700" r="4" fill="#00ff41" class="pad"/>
-    <circle cx="1500" cy="700" r="4" fill="#00ff41" class="pad"/>
-  </g>
-
-  <!-- Signal dot that travels along traces -->
-  <circle id="signal-dot" cx="200" cy="200" r="5" fill="#00ff41" opacity="0"/>
-</svg>
 <div id="page-transition" aria-hidden="true"></div>
 <div class="scanlines" aria-hidden="true"></div>
 <canvas id="matrix-canvas" aria-hidden="true"></canvas>
@@ -636,6 +555,8 @@
 <div class="page active" id="pg-home">
 
   <section id="s-hero">
+    <canvas id="pcb-canvas"></canvas>
+    <div class="hero-overlay"></div>
     <div class="hero-badge"><div class="badge-dot"></div>&gt; v1.0.0 &mdash; KiCad 6 &amp; 7</div>
     <div class="hero-hl-wrap">
       <h1 class="hero-hl" id="heroHl" aria-label="Catch PCB errors before they cost you."></h1><span class="hero-cursor" id="heroCursor">_</span>
@@ -1479,18 +1400,6 @@ function renderHistory(rows) {
   setInterval(draw, 90);
 })();
 
-/* ── Hero typing animation ── */
-(function () {
-  const text = 'Catch PCB errors before they cost you.';
-  const el   = document.getElementById('heroHl');
-  let i = 0;
-  setTimeout(function type() {
-    if (i < text.length) {
-      el.textContent += text[i++];
-      setTimeout(type, 38 + Math.random() * 22);
-    }
-  }, 380);
-})();
 
 /* ── Hero mockup loop ── */
 const MOCK = [
@@ -1901,70 +1810,9 @@ window.go = function(id) {
 if (window.gsap && window.ScrollTrigger) {
   gsap.registerPlugin(ScrollTrigger);
 
-  // PCB Overlay Animation (Home Page Only)
+  // Initialize PCB Canvas on home page
   if (curPage === 'home') {
-    const traces = document.querySelectorAll('#pcb-traces .trace');
-    const pads = document.querySelectorAll('#pcb-pads .pad');
-    const signalDot = document.getElementById('signal-dot');
-
-    // Draw traces on page load, one by one
-    const drawTimeline = gsap.timeline();
-    traces.forEach((trace, index) => {
-      drawTimeline.to(trace, {
-        strokeDashoffset: 0,
-        duration: 0.8,
-      }, index * 0.3);
-
-      // Fade in pads as traces reach them
-      if (index < pads.length) {
-        drawTimeline.to(pads[index], { opacity: 1, duration: 0.2 }, (index * 0.3) + 0.6);
-      }
-    });
-
-    // Signal dot travels along path continuously after traces draw
-    const signalPath = gsap.timeline({ repeat: -1 });
-    signalPath.to(signalDot, { opacity: 1, duration: 0.2 }, 0);
-    signalPath.to(signalDot, {
-      attr: { cx: 400, cy: 200 },
-      duration: 2,
-      ease: 'none'
-    }, 0.2);
-    signalPath.to(signalDot, {
-      attr: { cx: 400, cy: 400 },
-      duration: 2,
-      ease: 'none'
-    });
-    signalPath.to(signalDot, {
-      attr: { cx: 800, cy: 350 },
-      duration: 2,
-      ease: 'none'
-    });
-    signalPath.to(signalDot, {
-      attr: { cx: 1200, cy: 500 },
-      duration: 2,
-      ease: 'none'
-    });
-    signalPath.to(signalDot, {
-      attr: { cx: 1600, cy: 600 },
-      duration: 2,
-      ease: 'none'
-    });
-    signalPath.to(signalDot, {
-      attr: { cx: 200, cy: 200 },
-      duration: 3,
-      ease: 'none'
-    });
-
-    // Background image parallax zoom on scroll
-    gsap.to('#s-hero', {
-      backgroundSize: '110%',
-      scrollTrigger: {
-        trigger: '#s-hero',
-        start: 'top top',
-        end: 'bottom top',
-        scrub: 1.5
-      }
-    });
+    initPCBCanvas();
   }
 
   // Animate feature cards - slide in from left/right alternating
@@ -2040,6 +1888,264 @@ if (heroHl && !heroHl.textContent) {
   const text = 'Catch PCB errors before they cost you.';
   heroHl.textContent = text;
 }
+
+function initPCBCanvas() {
+  const canvas = document.getElementById('pcb-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const wrap = canvas.parentElement;
+
+  function resize() {
+    canvas.width = wrap.offsetWidth;
+    canvas.height = wrap.offsetHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const W = () => canvas.width;
+  const H = () => canvas.height;
+  const GREEN = '#00ff41';
+  const PAD_COLOR = '#b87333';
+  const IC_BODY = '#1a1a2e';
+  const CAP_COLOR = '#c8a96e';
+  const RES_COLOR = '#2a2a2a';
+
+  const layout = {
+    traces: [
+      {x1:0.15,y1:0.3,x2:0.45,y2:0.3},{x1:0.45,y1:0.3,x2:0.45,y2:0.55},
+      {x1:0.45,y1:0.55,x2:0.75,y2:0.55},{x1:0.55,y1:0.3,x2:0.55,y2:0.2},
+      {x1:0.55,y1:0.2,x2:0.8,y2:0.2},{x1:0.75,y1:0.55,x2:0.75,y2:0.35},
+      {x1:0.75,y1:0.35,x2:0.85,y2:0.35},{x1:0.3,y1:0.3,x2:0.3,y2:0.7},
+      {x1:0.3,y1:0.7,x2:0.65,y2:0.7},{x1:0.65,y1:0.7,x2:0.65,y2:0.55},
+      {x1:0.15,y1:0.5,x2:0.25,y2:0.5},{x1:0.25,y1:0.5,x2:0.25,y2:0.65},
+      {x1:0.25,y1:0.65,x2:0.45,y2:0.65},{x1:0.8,y1:0.2,x2:0.8,y2:0.6},
+      {x1:0.8,y1:0.6,x2:0.65,y2:0.6}
+    ],
+    components: [
+      {id:'U1',type:'ic',rx:0.47,ry:0.45,rw:0.18,rh:0.16,label:'U1',sublabel:'STM32F103',pins:14,color:IC_BODY,dir:'left'},
+      {id:'C1',type:'cap',rx:0.22,ry:0.27,rw:0.04,rh:0.06,label:'C1',color:CAP_COLOR,dir:'top'},
+      {id:'C2',type:'cap',rx:0.28,ry:0.44,rw:0.04,rh:0.06,label:'C2',color:CAP_COLOR,dir:'top'},
+      {id:'C3',type:'cap',rx:0.60,ry:0.62,rw:0.04,rh:0.06,label:'C3',color:CAP_COLOR,dir:'bottom'},
+      {id:'R1',type:'res',rx:0.73,ry:0.28,rw:0.07,rh:0.03,label:'R1',color:RES_COLOR,dir:'right'},
+      {id:'R2',type:'res',rx:0.73,ry:0.38,rw:0.07,rh:0.03,label:'R2',color:RES_COLOR,dir:'right'},
+      {id:'R3',type:'res',rx:0.73,ry:0.48,rw:0.07,rh:0.03,label:'R3',color:RES_COLOR,dir:'right'},
+      {id:'Y1',type:'xtal',rx:0.63,ry:0.18,rw:0.09,rh:0.05,label:'Y1',color:'#888',dir:'top'},
+      {id:'J1',type:'conn',rx:0.09,ry:0.45,rw:0.05,rh:0.18,label:'J1',color:'#555',dir:'left'},
+      {id:'D1',type:'led',rx:0.82,ry:0.32,rw:0.018,label:'D1',color:'#00ff41',dir:'right'},
+      {id:'D2',type:'led',rx:0.82,ry:0.42,rw:0.018,label:'D2',color:'#ff4141',dir:'right'},
+      {id:'U2',type:'sot',rx:0.20,ry:0.62,rw:0.06,rh:0.04,label:'U2',color:'#1a1a2e',dir:'bottom'}
+    ]
+  };
+
+  let progress = 0;
+  let traceProgress = layout.traces.map(() => 0);
+  let compProgress = layout.components.map(() => 0);
+  let solderFlashes = [];
+  let signalT = 0;
+  let running = true;
+
+  const dirOffsets = {left:[-1.5,0],right:[1.5,0],top:[0,-1.5],bottom:[0,1.5]};
+
+  function easeOutBack(t) {
+    const c1=1.70158,c3=c1+1;
+    return 1+c3*Math.pow(t-1,3)+c1*Math.pow(t-1,2);
+  }
+
+  function drawGrid() {
+    ctx.fillStyle = '#050e05';
+    ctx.fillRect(0,0,W(),H());
+    ctx.fillStyle = 'rgba(0,255,65,0.055)';
+    for(let x=20;x<W();x+=20) for(let y=20;y<H();y+=20) {
+      ctx.beginPath(); ctx.arc(x,y,0.8,0,Math.PI*2); ctx.fill();
+    }
+    ctx.strokeStyle='rgba(0,255,65,0.18)';ctx.lineWidth=1.5;
+    ctx.strokeRect(5,5,W()-10,H()-10);
+    const cm=14;
+    [[5,5],[W()-5,5],[5,H()-5],[W()-5,H()-5]].forEach(([cx,cy])=>{
+      const sx=cx<W()/2?1:-1,sy=cy<H()/2?1:-1;
+      ctx.strokeStyle='rgba(0,255,65,0.45)';ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.moveTo(cx+sx*cm,cy);ctx.lineTo(cx,cy);ctx.lineTo(cx,cy+sy*cm);ctx.stroke();
+    });
+  }
+
+  function drawTrace(t,prog) {
+    if(prog<=0)return;
+    const x1=t.x1*W(),y1=t.y1*H(),x2=t.x2*W(),y2=t.y2*H();
+    ctx.strokeStyle='rgba(0,255,65,0.32)';ctx.lineWidth=2.5;ctx.lineCap='round';
+    ctx.shadowColor=GREEN;ctx.shadowBlur=5;
+    ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x1+(x2-x1)*prog,y1+(y2-y1)*prog);ctx.stroke();
+    ctx.shadowBlur=0;
+    ctx.fillStyle=PAD_COLOR;
+    ctx.beginPath();ctx.arc(x1,y1,4,0,Math.PI*2);ctx.fill();
+    if(prog>=1){ctx.beginPath();ctx.arc(x2,y2,4,0,Math.PI*2);ctx.fill();}
+  }
+
+  function drawIC(c,ox,oy,alpha) {
+    const x=(c.rx+ox*0.4)*W(),y=(c.ry+oy*0.4)*H(),bw=c.rw*W(),bh=c.rh*H();
+    ctx.globalAlpha=alpha;
+    if(alpha>0.8){ctx.shadowColor=GREEN;ctx.shadowBlur=18;}
+    ctx.fillStyle=c.color;ctx.strokeStyle='rgba(0,255,65,0.85)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.roundRect(x-bw/2,y-bh/2,bw,bh,3);ctx.fill();ctx.stroke();
+    ctx.shadowBlur=0;
+    const np=Math.floor((c.pins||12)/4);
+    for(let i=0;i<np;i++){
+      const px2=x-bw/2+(i+0.5)*(bw/np);
+      ctx.fillStyle='#aaa';
+      ctx.fillRect(px2-1.5,y-bh/2-8,3,9);
+      ctx.fillRect(px2-1.5,y+bh/2-1,3,9);
+    }
+    for(let i=0;i<np;i++){
+      const py2=y-bh/2+(i+0.5)*(bh/np);
+      ctx.fillStyle='#aaa';
+      ctx.fillRect(x-bw/2-8,py2-1.5,9,3);
+      ctx.fillRect(x+bw/2-1,py2-1.5,9,3);
+    }
+    ctx.fillStyle=GREEN;ctx.beginPath();ctx.arc(x-bw/2+6,y-bh/2+6,3,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='rgba(0,255,65,0.95)';ctx.font=`bold ${Math.max(9,bw*0.13)}px 'Courier New'`;
+    ctx.textAlign='center';ctx.fillText(c.label,x,y-5);
+    ctx.font=`${Math.max(7,bw*0.09)}px 'Courier New'`;ctx.fillStyle='rgba(0,255,65,0.6)';
+    ctx.fillText(c.sublabel||'',x,y+8);ctx.globalAlpha=1;
+  }
+
+  function drawCap(c,ox,oy,alpha) {
+    const x=(c.rx+ox*0.3)*W(),y=(c.ry+oy*0.3)*H(),bw=c.rw*W(),bh=c.rh*H();
+    ctx.globalAlpha=alpha;if(alpha>0.8){ctx.shadowColor=GREEN;ctx.shadowBlur=8;}
+    ctx.fillStyle=c.color;ctx.strokeStyle='rgba(0,255,65,0.6)';ctx.lineWidth=0.8;
+    ctx.fillRect(x-bw/2,y-bh/2,bw,bh);ctx.strokeRect(x-bw/2,y-bh/2,bw,bh);
+    ctx.fillStyle='#bbb';ctx.fillRect(x-bw/2-2,y-bh/2,3,bh);ctx.fillRect(x+bw/2-1,y-bh/2,3,bh);
+    ctx.shadowBlur=0;ctx.fillStyle='rgba(0,255,65,0.7)';ctx.font=`7px 'Courier New'`;
+    ctx.textAlign='center';ctx.fillText(c.label,x,y-bh/2-3);ctx.globalAlpha=1;
+  }
+
+  function drawRes(c,ox,oy,alpha) {
+    const x=(c.rx+ox*0.3)*W(),y=(c.ry+oy*0.3)*H(),bw=c.rw*W(),bh=(c.rh||0.03)*H();
+    ctx.globalAlpha=alpha;if(alpha>0.8){ctx.shadowColor=GREEN;ctx.shadowBlur=8;}
+    ctx.fillStyle=c.color;ctx.strokeStyle='rgba(0,255,65,0.6)';ctx.lineWidth=0.8;
+    ctx.fillRect(x-bw/2,y-bh/2,bw,bh);ctx.strokeRect(x-bw/2,y-bh/2,bw,bh);
+    ctx.fillStyle='#bbb';ctx.fillRect(x-bw/2-2,y-bh/2,3,bh);ctx.fillRect(x+bw/2-1,y-bh/2,3,bh);
+    ctx.fillStyle='rgba(255,140,0,0.9)';ctx.fillRect(x-2,y-bh/2,4,bh);
+    ctx.shadowBlur=0;ctx.fillStyle='rgba(0,255,65,0.7)';ctx.font=`7px 'Courier New'`;
+    ctx.textAlign='center';ctx.fillText(c.label,x,y-bh/2-3);ctx.globalAlpha=1;
+  }
+
+  function drawXtal(c,ox,oy,alpha) {
+    const x=(c.rx+ox*0.3)*W(),y=(c.ry+oy*0.3)*H(),bw=c.rw*W(),bh=c.rh*H();
+    ctx.globalAlpha=alpha;if(alpha>0.8){ctx.shadowColor='#00d4ff';ctx.shadowBlur=10;}
+    ctx.fillStyle=c.color;ctx.strokeStyle='rgba(0,212,255,0.85)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.roundRect(x-bw/2,y-bh/2,bw,bh,bh/2);ctx.fill();ctx.stroke();
+    ctx.shadowBlur=0;ctx.fillStyle='rgba(0,212,255,0.9)';ctx.font=`7px 'Courier New'`;
+    ctx.textAlign='center';ctx.fillText(c.label,x,y-bh/2-3);ctx.globalAlpha=1;
+  }
+
+  function drawConn(c,ox,oy,alpha) {
+    const x=(c.rx+ox*0.3)*W(),y=(c.ry+oy*0.3)*H(),bw=c.rw*W(),bh=c.rh*H();
+    ctx.globalAlpha=alpha;if(alpha>0.8){ctx.shadowColor=GREEN;ctx.shadowBlur=8;}
+    ctx.fillStyle=c.color;ctx.strokeStyle='rgba(0,255,65,0.7)';ctx.lineWidth=1;
+    ctx.fillRect(x-bw/2,y-bh/2,bw,bh);ctx.strokeRect(x-bw/2,y-bh/2,bw,bh);
+    for(let i=0;i<4;i++){
+      const hy=y-bh/2+(i+0.5)*(bh/4);
+      ctx.fillStyle='#000';ctx.beginPath();ctx.arc(x,hy,2.5,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle='#999';ctx.lineWidth=0.5;ctx.stroke();
+    }
+    ctx.shadowBlur=0;ctx.fillStyle='rgba(0,255,65,0.7)';ctx.font=`7px 'Courier New'`;
+    ctx.textAlign='center';ctx.fillText(c.label,x,y-bh/2-3);ctx.globalAlpha=1;
+  }
+
+  function drawLED(c,ox,oy,alpha) {
+    const x=(c.rx+ox*0.2)*W(),y=(c.ry+oy*0.2)*H(),r=c.rw*W();
+    ctx.globalAlpha=alpha;if(alpha>0.8){ctx.shadowColor=c.color;ctx.shadowBlur=14;}
+    ctx.fillStyle=c.color;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+    ctx.shadowBlur=0;ctx.fillStyle='rgba(0,255,65,0.7)';ctx.font=`7px 'Courier New'`;
+    ctx.textAlign='center';ctx.fillText(c.label,x,y-r-3);ctx.globalAlpha=1;
+  }
+
+  function drawSOT(c,ox,oy,alpha) {
+    const x=(c.rx+ox*0.3)*W(),y=(c.ry+oy*0.3)*H(),bw=c.rw*W(),bh=c.rh*H();
+    ctx.globalAlpha=alpha;ctx.fillStyle=c.color;ctx.strokeStyle='rgba(0,255,65,0.6)';ctx.lineWidth=0.8;
+    ctx.beginPath();ctx.roundRect(x-bw/2,y-bh/2,bw,bh,2);ctx.fill();ctx.stroke();
+    for(let i=0;i<3;i++){ctx.fillStyle='#aaa';ctx.fillRect(x-bw/2+i*bw/2-1.5,y+bh/2,3,5);}
+    ctx.fillStyle='rgba(0,255,65,0.7)';ctx.font=`7px 'Courier New'`;
+    ctx.textAlign='center';ctx.fillText(c.label,x,y-bh/2-3);ctx.globalAlpha=1;
+  }
+
+  function drawComp(c,i) {
+    const p=compProgress[i];if(p<=0)return;
+    const ep=easeOutBack(Math.min(p,1));
+    const [dox,doy]=dirOffsets[c.dir||'left'];
+    const ox=dox*(1-ep),oy=doy*(1-ep);
+    const alpha=Math.min(p*2,1);
+    if(c.type==='ic') drawIC(c,ox,oy,alpha);
+    else if(c.type==='cap') drawCap(c,ox,oy,alpha);
+    else if(c.type==='res') drawRes(c,ox,oy,alpha);
+    else if(c.type==='xtal') drawXtal(c,ox,oy,alpha);
+    else if(c.type==='conn') drawConn(c,ox,oy,alpha);
+    else if(c.type==='led') drawLED(c,ox,oy,alpha);
+    else if(c.type==='sot') drawSOT(c,ox,oy,alpha);
+  }
+
+  function drawFlashes() {
+    solderFlashes=solderFlashes.filter(f=>f.t<1);
+    solderFlashes.forEach(f=>{
+      ctx.strokeStyle=`rgba(0,255,65,${(1-f.t)*0.9})`;ctx.lineWidth=2;
+      ctx.beginPath();ctx.arc(f.x,f.y,f.t*20,0,Math.PI*2);ctx.stroke();
+      f.t+=0.06;
+    });
+  }
+
+  function drawSignal() {
+    if(progress<0.85)return;
+    const path=[0,1,2,9,8,7,6,5,4,3];
+    const seg=Math.floor(signalT*path.length);
+    const st=(signalT*path.length)-seg;
+    const tr=layout.traces[path[seg%path.length]];if(!tr)return;
+    const x=(tr.x1+(tr.x2-tr.x1)*st)*W(),y=(tr.y1+(tr.y2-tr.y1)*st)*H();
+    ctx.shadowColor='#fff';ctx.shadowBlur=6;ctx.fillStyle='#fff';
+    ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);ctx.fill();
+    ctx.shadowColor=GREEN;ctx.shadowBlur=14;ctx.fillStyle=GREEN;
+    ctx.beginPath();ctx.arc(x,y,5,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+  }
+
+  let last=0;
+  function frame(ts) {
+    if(!running)return;
+    const dt=Math.min((ts-last)/1000,0.05);last=ts;
+    progress=Math.min(progress+dt*0.10,1);
+    layout.traces.forEach((t,i)=>{
+      const s=i/layout.traces.length*0.45,e=s+0.07;
+      traceProgress[i]=Math.max(0,Math.min(1,(progress-s)/(e-s)));
+    });
+    layout.components.forEach((c,i)=>{
+      const s=0.3+i/layout.components.length*0.55,e=s+0.07;
+      const prev=compProgress[i];
+      compProgress[i]=Math.max(0,Math.min(1,(progress-s)/(e-s)));
+      if(compProgress[i]>0.1&&prev<=0.1) solderFlashes.push({x:c.rx*W(),y:(c.ry||0.5)*H(),t:0});
+    });
+    if(progress>0.85) signalT=(signalT+dt*0.18)%1;
+    ctx.clearRect(0,0,W(),H());
+    drawGrid();
+    layout.traces.forEach((t,i)=>drawTrace(t,traceProgress[i]));
+    layout.components.forEach((c,i)=>drawComp(c,i));
+    drawFlashes();drawSignal();
+    requestAnimationFrame(frame);
+  }
+
+  document.addEventListener('visibilitychange',()=>{running=!document.hidden;if(running)requestAnimationFrame(frame);});
+  requestAnimationFrame(frame);
+
+  return ()=>{running=false;};
+}
+
+let pcbCleanup = null;
+const origShowPage = window.showPage;
+window.showPage = function(name) {
+  origShowPage && origShowPage(name);
+  if(name==='home') {
+    setTimeout(()=>{ if(pcbCleanup) pcbCleanup(); pcbCleanup=initPCBCanvas(); }, 50);
+  } else {
+    if(pcbCleanup){pcbCleanup();pcbCleanup=null;}
+  }
+};
+pcbCleanup = initPCBCanvas();
 </script>
 </body>
 </html>
