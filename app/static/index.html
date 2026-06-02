@@ -171,6 +171,14 @@
     .hproof { display:flex; align-items:center; gap:14px; justify-content:center; margin-top:36px; opacity:0; animation:sup .5s ease 1.55s forwards; font-size:12px; color:var(--text3); }
     .hproof-sep { color:var(--text3); }
 
+    /* PCB Assembly Section */
+    #s-pcb { padding:80px 24px; background:rgba(0,255,65,.01); border-top:1px solid var(--border); border-bottom:1px solid var(--border); min-height:800px; }
+    .pcb-container { max-width:900px; margin:0 auto; display:flex; align-items:center; justify-content:center; }
+    .pcb-svg { width:100%; max-width:800px; height:auto; }
+    .pcb-svg .trace { stroke-dasharray:1000; stroke-dashoffset:1000; }
+    @keyframes componentGlow { 0%{r:0; opacity:1} 100%{r:20; opacity:0} }
+    .component-glow { animation:componentGlow .6s ease-out; }
+
     /* Features */
     #s-feats { padding:110px 24px; }
     .fhdr { text-align:center; margin-bottom:52px; }
@@ -554,6 +562,115 @@
       <span>// Built for KiCad.</span>
       <span class="hproof-sep">&middot;</span>
       <span>// Designed for engineers.</span>
+    </div>
+  </section>
+
+  <!-- PCB Assembly Animation Section -->
+  <section id="s-pcb" class="pcb-section">
+    <div class="pcb-container">
+      <svg id="pcb-svg" viewBox="0 0 800 500" class="pcb-svg">
+        <!-- Board Base -->
+        <defs>
+          <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+            <circle cx="10" cy="10" r="1.5" fill="#00ff41" opacity="0.2"/>
+          </pattern>
+        </defs>
+
+        <!-- PCB Board -->
+        <g id="pcb-board">
+          <rect x="100" y="50" width="600" height="400" fill="#0a1a0a" stroke="#00ff41" stroke-width="2" opacity="0.3"/>
+          <rect x="100" y="50" width="600" height="400" fill="url(#grid)" stroke="none"/>
+        </g>
+
+        <!-- Circuit Traces (lines connecting components) -->
+        <g id="circuit-traces" opacity="0.4">
+          <!-- Horizontal trace: J1 to R1 -->
+          <line x1="150" y1="380" x2="250" y2="380" stroke="#00ff41" stroke-width="2" stroke-linecap="round" class="trace"/>
+          <!-- Vertical trace: R1 to U1 -->
+          <line x1="250" y1="380" x2="250" y2="280" stroke="#00ff41" stroke-width="2" stroke-linecap="round" class="trace"/>
+          <!-- Horizontal trace: R1 to R2 -->
+          <line x1="250" y1="280" x2="450" y2="280" stroke="#00ff41" stroke-width="2" stroke-linecap="round" class="trace"/>
+          <!-- Vertical trace: R2 to U1 -->
+          <line x1="450" y1="280" x2="450" y2="200" stroke="#00ff41" stroke-width="2" stroke-linecap="round" class="trace"/>
+          <!-- U1 to C1 -->
+          <line x1="450" y1="155" x2="550" y2="155" stroke="#00ff41" stroke-width="2" stroke-linecap="round" class="trace"/>
+          <!-- C1 to C2 -->
+          <line x1="570" y1="155" x2="570" y2="100" stroke="#00ff41" stroke-width="2" stroke-linecap="round" class="trace"/>
+          <!-- C2 back to board -->
+          <line x1="570" y1="100" x2="400" y2="100" stroke="#00ff41" stroke-width="2" stroke-linecap="round" class="trace"/>
+          <!-- Return trace to J1 -->
+          <line x1="400" y1="100" x2="150" y2="100" stroke="#00ff41" stroke-width="2" stroke-linecap="round" class="trace"/>
+          <line x1="150" y1="100" x2="150" y2="380" stroke="#00ff41" stroke-width="2" stroke-linecap="round" class="trace"/>
+        </g>
+
+        <!-- Components -->
+        <g id="components">
+          <!-- J1 Connector (bottom left) -->
+          <g id="comp-j1" class="component">
+            <rect x="130" y="360" width="40" height="40" fill="none" stroke="#00ff41" stroke-width="1.5"/>
+            <circle cx="138" cy="368" r="3" fill="#00ff41"/>
+            <circle cx="162" cy="368" r="3" fill="#00ff41"/>
+            <circle cx="138" cy="392" r="3" fill="#00ff41"/>
+            <circle cx="162" cy="392" r="3" fill="#00ff41"/>
+            <text x="150" y="420" font-size="10" fill="#00ff41" text-anchor="middle" font-family="JetBrains Mono">J1</text>
+          </g>
+
+          <!-- R1 Resistor -->
+          <g id="comp-r1" class="component">
+            <rect x="235" y="260" width="30" height="15" fill="none" stroke="#00ff41" stroke-width="1.5"/>
+            <line x1="240" y1="267" x2="260" y2="267" stroke="#00ff41" stroke-width="1"/>
+            <text x="250" y="295" font-size="10" fill="#00ff41" text-anchor="middle" font-family="JetBrains Mono">R1</text>
+          </g>
+
+          <!-- R2 Resistor -->
+          <g id="comp-r2" class="component">
+            <rect x="435" y="180" width="30" height="15" fill="none" stroke="#00ff41" stroke-width="1.5"/>
+            <line x1="440" y1="187" x2="460" y2="187" stroke="#00ff41" stroke-width="1"/>
+            <text x="450" y="210" font-size="10" fill="#00ff41" text-anchor="middle" font-family="JetBrains Mono">R2</text>
+          </g>
+
+          <!-- U1 Microcontroller (large, center) -->
+          <g id="comp-u1" class="component">
+            <rect x="410" y="130" width="80" height="60" fill="none" stroke="#00ff41" stroke-width="2"/>
+            <!-- Pins on all sides -->
+            <rect x="405" y="145" width="5" height="8" fill="#00ff41"/>
+            <rect x="405" y="162" width="5" height="8" fill="#00ff41"/>
+            <rect x="495" y="145" width="5" height="8" fill="#00ff41"/>
+            <rect x="495" y="162" width="5" height="8" fill="#00ff41"/>
+            <rect x="420" y="125" width="8" height="5" fill="#00ff41"/>
+            <rect x="452" y="125" width="8" height="5" fill="#00ff41"/>
+            <rect x="420" y="190" width="8" height="5" fill="#00ff41"/>
+            <rect x="452" y="190" width="8" height="5" fill="#00ff41"/>
+            <text x="450" y="175" font-size="12" fill="#00ff41" text-anchor="middle" font-family="JetBrains Mono" font-weight="bold">U1</text>
+            <text x="450" y="188" font-size="8" fill="#00ff41" text-anchor="middle" font-family="JetBrains Mono">STM32</text>
+          </g>
+
+          <!-- C1 Capacitor -->
+          <g id="comp-c1" class="component">
+            <rect x="545" y="135" width="18" height="25" fill="none" stroke="#00ff41" stroke-width="1.5"/>
+            <line x1="551" y1="138" x2="551" y2="157" stroke="#00ff41" stroke-width="1.5"/>
+            <line x1="557" y1="138" x2="557" y2="157" stroke="#00ff41" stroke-width="1.5"/>
+            <text x="554" y="175" font-size="10" fill="#00ff41" text-anchor="middle" font-family="JetBrains Mono">C1</text>
+          </g>
+
+          <!-- C2 Capacitor -->
+          <g id="comp-c2" class="component">
+            <rect x="545" y="70" width="18" height="25" fill="none" stroke="#00ff41" stroke-width="1.5"/>
+            <line x1="551" y1="73" x2="551" y2="92" stroke="#00ff41" stroke-width="1.5"/>
+            <line x1="557" y1="73" x2="557" y2="92" stroke="#00ff41" stroke-width="1.5"/>
+            <text x="554" y="110" font-size="10" fill="#00ff41" text-anchor="middle" font-family="JetBrains Mono">C2</text>
+          </g>
+        </g>
+
+        <!-- Signal trace animated dot container -->
+        <g id="signal-dot-container">
+          <circle id="signal-dot" cx="150" cy="380" r="6" fill="#00ff41" opacity="0.9"/>
+          <circle cx="150" cy="380" r="6" fill="white" r="2" opacity="0.6"/>
+        </g>
+
+        <!-- Completion text -->
+        <text id="completion-text" x="400" y="470" font-size="14" fill="#00ff41" text-anchor="middle" font-family="JetBrains Mono" opacity="0" letter-spacing="2">// DESIGN VALIDATED</text>
+      </svg>
     </div>
   </section>
 
@@ -1654,7 +1771,11 @@ window.go = function(id) {
         el.classList.remove('scroll-in');
         scrollAnimationObserver.observe(el);
       });
+      if (window.ScrollTrigger) ScrollTrigger.refresh();
     }, 50);
+  } else {
+    // Kill ScrollTrigger animations when leaving home
+    if (window.ScrollTrigger) ScrollTrigger.getAll().forEach(trigger => trigger.kill());
   }
 
   // Page transition animation
@@ -1854,6 +1975,138 @@ if (window.gsap && window.ScrollTrigger) {
       }
     );
   });
+
+  /* ── PCB Assembly Animation ── */
+  const pcbSvg = document.getElementById('pcb-svg');
+  const pcbBoard = document.getElementById('pcb-board');
+  const traces = document.querySelectorAll('.pcb-svg .trace');
+  const components = document.querySelectorAll('.component');
+  const completionText = document.getElementById('completion-text');
+  const signalDot = document.getElementById('signal-dot');
+
+  if (pcbSvg && curPage === 'home') {
+    // Board reveal animation
+    gsap.to(pcbBoard, {
+      opacity: 1,
+      scrollTrigger: {
+        trigger: '#s-pcb',
+        start: 'top 60%',
+        end: 'top 20%',
+        scrub: 1,
+        markers: false
+      }
+    });
+
+    // Trace animations with stagger
+    traces.forEach((trace, index) => {
+      gsap.to(trace, {
+        strokeDashoffset: 0,
+        duration: 1.2,
+        scrollTrigger: {
+          trigger: '#s-pcb',
+          start: 'top 50%',
+          end: 'center 20%',
+          scrub: 1,
+          markers: false
+        },
+        delay: index * 0.15
+      });
+    });
+
+    // Component animations flying in
+    const componentAnimations = [
+      { el: '#comp-j1', fromX: -150, fromY: 0 },
+      { el: '#comp-r1', fromX: 0, fromY: -150 },
+      { el: '#comp-r2', fromX: 200, fromY: -150 },
+      { el: '#comp-u1', fromX: 0, fromY: -200 },
+      { el: '#comp-c1', fromX: 0, fromY: -200 },
+      { el: '#comp-c2', fromX: 0, fromY: -200 }
+    ];
+
+    componentAnimations.forEach((comp, index) => {
+      const el = document.querySelector(comp.el);
+      if (el) {
+        gsap.fromTo(el,
+          { opacity: 0, x: comp.fromX, y: comp.fromY },
+          {
+            opacity: 1,
+            x: 0,
+            y: 0,
+            duration: 0.8,
+            ease: 'back.out(1.7)',
+            scrollTrigger: {
+              trigger: '#s-pcb',
+              start: 'top 40%',
+              end: 'center 10%',
+              scrub: 1,
+              markers: false
+            },
+            delay: index * 0.12
+          }
+        );
+      }
+    });
+
+    // Signal trace animation (continuous loop after assembly)
+    const signalTimeline = gsap.timeline({ repeat: -1 });
+    signalTimeline.to(signalDot, {
+      attr: { cx: 250, cy: 380 },
+      duration: 1.5,
+      ease: 'none'
+    }).to(signalDot, {
+      attr: { cx: 250, cy: 280 },
+      duration: 1.5,
+      ease: 'none'
+    }).to(signalDot, {
+      attr: { cx: 450, cy: 280 },
+      duration: 2,
+      ease: 'none'
+    }).to(signalDot, {
+      attr: { cx: 450, cy: 200 },
+      duration: 1.5,
+      ease: 'none'
+    }).to(signalDot, {
+      attr: { cx: 570, cy: 155 },
+      duration: 2,
+      ease: 'none'
+    }).to(signalDot, {
+      attr: { cx: 570, cy: 100 },
+      duration: 1.5,
+      ease: 'none'
+    }).to(signalDot, {
+      attr: { cx: 150, cy: 100 },
+      duration: 3,
+      ease: 'none'
+    }).to(signalDot, {
+      attr: { cx: 150, cy: 380 },
+      duration: 3,
+      ease: 'none'
+    });
+
+    // Pause signal animation until components are placed
+    signalTimeline.pause();
+    gsap.to(signalTimeline, {
+      progress: 1,
+      scrollTrigger: {
+        trigger: '#s-pcb',
+        start: 'center 40%',
+        onEnter: () => { signalTimeline.play(); }
+      }
+    });
+
+    // Completion animation
+    gsap.to(completionText, {
+      opacity: 1,
+      duration: 0.8,
+      scrollTrigger: {
+        trigger: '#s-pcb',
+        start: 'bottom 30%',
+        onEnter: () => {
+          gsap.to(pcbBoard, { boxShadow: '0 0 40px rgba(0,255,65,0.4)', duration: 0.6, yoyo: true, repeat: 1 });
+        }
+      }
+    });
+  }
 }
 
 // Hero headline display
