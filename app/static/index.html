@@ -109,8 +109,7 @@
 
     /* ── Pages ── */
     .page { display:none; position:relative; z-index:1; }
-    .page.active { display:block; animation:pgIn .18s ease both; }
-    @keyframes pgIn { from{opacity:0} to{opacity:1} }
+    .page.active { display:block; animation:pgIn .15s ease both; }
 
     /* ── Layout ── */
     .container { max-width:1200px; margin:0 auto; padding:0 24px; }
@@ -438,13 +437,86 @@
       .fgrid{grid-template-columns:1fr}
       .hero-ctas{flex-direction:column;align-items:center}
     }
+
+    /* ════════════ THREE.JS & CANVAS OVERLAYS ════════════ */
+    #three-canvas { position:fixed; top:0; left:0; width:100%; height:100%; z-index:0; pointer-events:none; }
+    #circuit-canvas { position:fixed; top:0; left:0; width:100%; height:100%; z-index:0; pointer-events:none; }
+
+    /* ════════════ CUSTOM CURSOR ════════════ */
+    #cursor-dot { position:fixed; width:6px; height:6px; background:var(--green); border-radius:50%; pointer-events:none; z-index:9999; display:none; box-shadow:0 0 8px var(--green); }
+    #cursor-ring { position:fixed; width:20px; height:20px; border:1.5px solid var(--green); border-radius:50%; pointer-events:none; z-index:9999; display:none; }
+    body { cursor:none; }
+    body.cursor-active #cursor-dot, body.cursor-active #cursor-ring { display:block; }
+
+    /* ════════════ SCROLL ANIMATIONS ════════════ */
+    .fc { --i:0; }
+    .hiw-step { --i:0; }
+    .dcard { opacity:0; transform:translateY(20px); transition:opacity .5s ease,transform .5s ease; transition-delay:calc(var(--i,0) * 60ms); }
+    .dcard.in-view { opacity:1; transform:none; }
+
+    .pcard { opacity:0; transform:scale(0.8); transition:opacity .5s ease,transform .5s ease; transition-delay:calc(var(--i,0) * 80ms); }
+    .pcard.in-view { opacity:1; transform:scale(1); box-shadow:0 0 30px rgba(0,255,65,0.15); }
+
+    /* ════════════ CHECKER PAGE ANIMATIONS ════════════ */
+    .dz { border-width:2px; animation:dzRotate 8s linear infinite; }
+    @keyframes dzRotate { 0%{border-color:rgba(0,255,65,.25)} 50%{border-color:rgba(0,255,65,.45)} 100%{border-color:rgba(0,255,65,.25)} }
+    .dz.over { animation:dzPulse 0.6s ease-out infinite; background:rgba(0,255,65,.08) !important; }
+    @keyframes dzPulse { 0%{box-shadow:0 0 0 0 rgba(0,255,65,.3)} 100%{box-shadow:0 0 0 12px rgba(0,255,65,0)} }
+
+    .rc { transform-origin:top center; animation:rcFlip .6s cubic-bezier(.68,-.55,.27,1.55) both; }
+    .rc:nth-child(1) { animation-delay:0ms; }
+    .rc:nth-child(2) { animation-delay:80ms; }
+    .rc:nth-child(3) { animation-delay:160ms; }
+    .rc:nth-child(4) { animation-delay:240ms; }
+    .rc:nth-child(5) { animation-delay:320ms; }
+    .rc:nth-child(6) { animation-delay:400ms; }
+    .rc:nth-child(7) { animation-delay:480ms; }
+    .rc:nth-child(8) { animation-delay:560ms; }
+    @keyframes rcFlip { from{opacity:0;transform:rotateX(-90deg) translateZ(-20px)} to{opacity:1;transform:rotateX(0) translateZ(0)} }
+
+    .rpill { opacity:0; animation:rpillIn .5s ease forwards; }
+    .rpill:nth-child(1) { animation-delay:0.2s; }
+    .rpill:nth-child(2) { animation-delay:0.3s; }
+    .rpill:nth-child(3) { animation-delay:0.4s; }
+    @keyframes rpillIn { from{opacity:0;transform:scale(0.8)} to{opacity:1;transform:scale(1)} }
+
+    .pn { font-weight:700; }
+
+    .ai-panel { opacity:0; animation:aiSlideUp .4s ease .8s forwards; }
+    @keyframes aiSlideUp { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:none} }
+
+    /* ════════════ PAGE TRANSITIONS ════════════ */
+    .page.exit { animation:pgOut .15s ease forwards; }
+    @keyframes pgOut { to{opacity:0;transform:translateX(-30px)} }
+    .page.active { animation:pgIn .15s ease forwards; }
+    @keyframes pgIn { from{opacity:0;transform:translateX(30px)} to{opacity:1;transform:none} }
+
+    /* ════════════ NAV HOVER EFFECTS ════════════ */
+    .nav-links a { position:relative; overflow:hidden; }
+    .nav-links a::after { content:''; position:absolute; bottom:0; left:0; width:0; height:1px; background:var(--green); transition:width .3s ease; }
+    .nav-links a:hover::after { width:100%; }
+
+    /* ════════════ FEATURE CARD GLOW ════════════ */
+    .fc { position:relative; }
+    .fc::before { content:''; position:absolute; top:50%; left:50%; width:0; height:0; background:radial-gradient(circle,rgba(0,255,65,0.4) 0%,transparent 70%); pointer-events:none; transition:all .3s ease; }
+
+    /* ════════════ RESPONSIVE ADJUSTMENTS ════════════ */
+    @media(max-width:768px) {
+      #cursor-dot, #cursor-ring { display:none !important; }
+      body { cursor:auto; }
+    }
   </style>
+  <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.4/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.4/ScrollTrigger.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
+<div id="cursor-dot" aria-hidden="true"></div>
+<div id="cursor-ring" aria-hidden="true"></div>
+<canvas id="circuit-canvas" aria-hidden="true"></canvas>
 <div class="scanlines" aria-hidden="true"></div>
-<canvas id="matrix-canvas" aria-hidden="true"></canvas>
 <div class="pg-flash" id="pg-flash" aria-hidden="true"></div>
 
 <!-- ══ NAV ══ -->
@@ -1584,6 +1656,400 @@ function notifySubmit() {
   document.getElementById('nbtn').textContent = '[ done ]';
   document.getElementById('nsuc').style.display = 'flex';
 }
+
+/* ════════════ THREE.JS PARTICLE SCENE (HERO) ════════════ */
+(function() {
+  const canvas = document.getElementById('three-canvas');
+  if (!canvas || !window.THREE) return;
+
+  let scene, camera, renderer, particles, lines;
+  let mouseX = 0, mouseY = 0;
+  let animationId = null;
+  const particlePositions = [];
+  const particleCount = 2000;
+
+  function init() {
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.z = 50;
+
+    renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(0x080808, 0);
+
+    // Create particle geometry
+    const geom = new THREE.BufferGeometry();
+    const pos = [];
+    const cols = [];
+    for (let i = 0; i < particleCount; i++) {
+      pos.push((Math.random() - 0.5) * 200, (Math.random() - 0.5) * 200, (Math.random() - 0.5) * 200);
+      const isGreen = Math.random() > 0.5;
+      const c = isGreen ? [0, 1, 0.25] : [0, 0.83, 1];
+      cols.push(...c);
+    }
+    geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3));
+    geom.setAttribute('color', new THREE.BufferAttribute(new Float32Array(cols), 3));
+
+    const mat = new THREE.PointsMaterial({ size: 0.3, sizeAttenuation: true, vertexColors: true, transparent: true, opacity: 0.4 });
+    particles = new THREE.Points(geom, mat);
+    scene.add(particles);
+
+    // Create line connections
+    const lineGeom = new THREE.BufferGeometry();
+    const linePositions = [];
+    const posArray = geom.getAttribute('position').array;
+    for (let i = 0; i < particleCount; i += 40) {
+      for (let j = i + 1; j < particleCount; j += 40) {
+        const dx = posArray[i*3] - posArray[j*3];
+        const dy = posArray[i*3+1] - posArray[j*3+1];
+        const dz = posArray[i*3+2] - posArray[j*3+2];
+        const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+        if (dist < 60) {
+          linePositions.push(posArray[i*3], posArray[i*3+1], posArray[i*3+2]);
+          linePositions.push(posArray[j*3], posArray[j*3+1], posArray[j*3+2]);
+        }
+      }
+    }
+    lineGeom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(linePositions), 3));
+    const lineMat = new THREE.LineBasicMaterial({ color: 0x00ff41, transparent: true, opacity: 0.15, linewidth: 1 });
+    lines = new THREE.LineSegments(lineGeom, lineMat);
+    scene.add(lines);
+
+    particlePositions.length = 0;
+    for (let i = 0; i < pos.length; i += 3) {
+      particlePositions.push({ x: pos[i], y: pos[i+1], z: pos[i+2], ox: pos[i], oy: pos[i+1] });
+    }
+
+    window.addEventListener('resize', onWindowResize, { passive: true });
+    window.addEventListener('mousemove', onMouseMove, { passive: true });
+    window.addEventListener('visibilitychange', onVisibilityChange, { passive: true });
+
+    animate();
+  }
+
+  function onMouseMove(e) {
+    mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+    mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
+  }
+
+  function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  }
+
+  function onVisibilityChange() {
+    if (document.hidden) {
+      cancelAnimationFrame(animationId);
+    } else {
+      animate();
+    }
+  }
+
+  function animate() {
+    animationId = requestAnimationFrame(animate);
+    if (document.hidden) return;
+
+    particles.rotation.y += 0.0002;
+    particles.rotation.x += 0.00008;
+
+    const posAttr = particles.geometry.getAttribute('position');
+    const posArray = posAttr.array;
+    for (let i = 0; i < particlePositions.length; i++) {
+      const p = particlePositions[i];
+      posArray[i*3] = p.ox + mouseX * 8 + Math.sin(Date.now() * 0.0001 + i) * 2;
+      posArray[i*3+1] = p.oy + mouseY * 8 + Math.cos(Date.now() * 0.0001 + i) * 2;
+    }
+    posAttr.needsUpdate = true;
+
+    renderer.render(scene, camera);
+  }
+
+  init();
+})();
+
+/* ════════════ CUSTOM CURSOR ════════════ */
+(function() {
+  const dot = document.getElementById('cursor-dot');
+  const ring = document.getElementById('cursor-ring');
+  if (!dot || !ring) return;
+
+  let x = 0, y = 0, ringX = 0, ringY = 0;
+
+  document.addEventListener('mousemove', e => {
+    x = e.clientX;
+    y = e.clientY;
+    dot.style.left = (x - 3) + 'px';
+    dot.style.top = (y - 3) + 'px';
+  });
+
+  setInterval(() => {
+    ringX += (x - ringX) * 0.2;
+    ringY += (y - ringY) * 0.2;
+    ring.style.left = (ringX - 10) + 'px';
+    ring.style.top = (ringY - 10) + 'px';
+  }, 1000 / 60);
+
+  document.addEventListener('mouseenter', () => document.body.classList.add('cursor-active'));
+  document.addEventListener('mouseleave', () => document.body.classList.remove('cursor-active'));
+
+  const hoverable = ['a', 'button', '.btn-p', '.btn-g', '.fc', '.nav-links a', '.auth-input', '.auth-submit'];
+  document.addEventListener('mouseover', e => {
+    const el = e.target.closest(hoverable.join(','));
+    if (el) ring.style.width = ring.style.height = '30px';
+  });
+
+  document.addEventListener('mouseout', e => {
+    const el = e.target.closest(hoverable.join(','));
+    if (el) ring.style.width = ring.style.height = '20px';
+  });
+})();
+
+/* ════════════ CIRCUIT BOARD CANVAS (NON-HOME PAGES) ════════════ */
+(function() {
+  const canvas = document.getElementById('circuit-canvas');
+  if (!canvas) return;
+
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const lineWidth = 80;
+  const nodeSize = 4;
+  let nodes = [];
+  let time = 0;
+
+  function generateNodes() {
+    nodes = [];
+    for (let x = 0; x < canvas.width; x += lineWidth) {
+      for (let y = 0; y < canvas.height; y += lineWidth) {
+        nodes.push({
+          x: x + Math.random() * 20 - 10,
+          y: y + Math.random() * 20 - 10,
+          drawn: false,
+          blink: Math.random() * 2000,
+          active: false
+        });
+      }
+    }
+  }
+
+  function drawCircuitBoard() {
+    ctx.fillStyle = 'rgba(8,8,8,0.02)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.strokeStyle = 'rgba(0,255,65,0.08)';
+    ctx.lineWidth = 0.5;
+    for (let i = 0; i < nodes.length - 1; i++) {
+      if (Math.random() > 0.98) {
+        ctx.beginPath();
+        ctx.moveTo(nodes[i].x, nodes[i].y);
+        const next = nodes[Math.floor(Math.random() * nodes.length)];
+        ctx.lineTo(next.x, next.y);
+        ctx.stroke();
+      }
+    }
+
+    nodes.forEach(n => {
+      const pulse = (Math.sin(time * 0.005 + n.blink) + 1) * 0.5;
+      n.active = pulse > 0.7;
+      if (n.active) {
+        ctx.fillStyle = `rgba(0,255,65,${0.3 + pulse * 0.3})`;
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, nodeSize + pulse * 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = `rgba(0,255,65,${0.6 + pulse * 0.2})`;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = 'rgba(0,255,65,0.15)';
+        ctx.beginPath();
+        ctx.rect(n.x - nodeSize, n.y - nodeSize, nodeSize * 2, nodeSize * 2);
+        ctx.fill();
+      }
+    });
+
+    time++;
+    if (!document.hidden) requestAnimationFrame(drawCircuitBoard);
+  }
+
+  function onWindowResize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    generateNodes();
+  }
+
+  generateNodes();
+  drawCircuitBoard();
+  window.addEventListener('resize', onWindowResize, { passive: true });
+})();
+
+/* ════════════ GSAP SCROLL TRIGGER ANIMATIONS ════════════ */
+(function() {
+  if (!window.gsap || !window.ScrollTrigger) return;
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  // Feature cards slide in from alternating sides
+  document.querySelectorAll('.fc').forEach((card, i) => {
+    gsap.to(card, {
+      scrollTrigger: {
+        trigger: card,
+        start: 'top 75%',
+        end: 'top 25%',
+        scrub: false,
+        onEnter: () => card.classList.add('in'),
+        onLeaveBack: () => card.classList.remove('in')
+      },
+      duration: 0.6,
+      ease: 'power2.out'
+    });
+  });
+
+  // How it works steps
+  document.querySelectorAll('.hiw-step').forEach((step, i) => {
+    gsap.to(step, {
+      scrollTrigger: {
+        trigger: step,
+        start: 'top 70%',
+        end: 'top 30%',
+        scrub: false,
+        onEnter: () => step.classList.add('in'),
+        onLeaveBack: () => step.classList.remove('in')
+      }
+    });
+  });
+
+  // Pricing cards with glow
+  document.querySelectorAll('.pcard').forEach((card, i) => {
+    gsap.to(card, {
+      scrollTrigger: {
+        trigger: card,
+        start: 'top 75%',
+        end: 'top 25%',
+        scrub: false,
+        onEnter: () => card.classList.add('in-view'),
+        onLeaveBack: () => card.classList.remove('in-view')
+      }
+    });
+  });
+
+  // Docs cards
+  document.querySelectorAll('.dcard').forEach((card, i) => {
+    gsap.to(card, {
+      scrollTrigger: {
+        trigger: card,
+        start: 'top 75%',
+        end: 'top 25%',
+        scrub: false,
+        onEnter: () => card.classList.add('in-view'),
+        onLeaveBack: () => card.classList.remove('in-view')
+      }
+    });
+  });
+
+  // Count up numbers in pills
+  const rpills = document.querySelectorAll('.rpill .pn');
+  rpills.forEach(pill => {
+    const finalNum = parseInt(pill.textContent);
+    gsap.to({ val: 0 }, {
+      val: finalNum,
+      duration: 0.6,
+      ease: 'power2.out',
+      onUpdate: function() { pill.textContent = Math.round(this.targets()[0].val); }
+    });
+  });
+})();
+
+/* ════════════ PAGE TRANSITION ANIMATIONS ════════════ */
+(function() {
+  const origGo = window.go;
+  window.go = function(id) {
+    const prev = document.getElementById('pg-' + curPage);
+    if (prev && prev.classList.contains('active')) {
+      gsap.to(prev, { duration: 0.15, opacity: 0, x: -30, ease: 'power2.in' });
+    }
+    origGo(id);
+    const next = document.getElementById('pg-' + id);
+    if (next) {
+      gsap.fromTo(next, { opacity: 0, x: 30 }, { duration: 0.15, opacity: 1, x: 0, ease: 'power2.out' });
+    }
+  };
+})();
+
+/* ════════════ CHECKER PAGE INTERACTIVE EFFECTS ════════════ */
+(function() {
+  const dz = document.getElementById('dz');
+  if (!dz) return;
+
+  dz.addEventListener('dragover', () => {
+    if (window.gsap) {
+      gsap.to(dz, { duration: 0.3, borderWidth: 3, boxShadow: '0 0 40px rgba(0,255,65,0.3)' });
+    }
+  });
+
+  dz.addEventListener('dragleave', () => {
+    if (window.gsap) {
+      gsap.to(dz, { duration: 0.3, borderWidth: 2, boxShadow: 'none' });
+    }
+  });
+})();
+
+/* ════════════ NAV UNDERLINE ANIMATION ════════════ */
+(function() {
+  const navLinks = document.querySelectorAll('.nav-links a');
+  navLinks.forEach(link => {
+    link.addEventListener('mouseenter', function() {
+      if (window.gsap) {
+        gsap.to(this, { duration: 0.3, textDecoration: 'underline' });
+      }
+    });
+    link.addEventListener('mouseleave', function() {
+      if (window.gsap) {
+        gsap.to(this, { duration: 0.3, textDecoration: 'none' });
+      }
+    });
+  });
+})();
+
+/* ════════════ FEATURE CARD MOUSE GLOW ════════════ */
+(function() {
+  const cards = document.querySelectorAll('.fc');
+  cards.forEach(card => {
+    card.addEventListener('mousemove', e => {
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      card.style.setProperty('--glow-x', x + 'px');
+      card.style.setProperty('--glow-y', y + 'px');
+      if (window.gsap) {
+        gsap.to(card, {
+          duration: 0.3,
+          '--card-glow': '0.08'
+        });
+      }
+    });
+    card.addEventListener('mouseleave', () => {
+      if (window.gsap) {
+        gsap.to(card, {
+          duration: 0.4,
+          '--card-glow': '0'
+        });
+      }
+    });
+  });
+})();
+
+/* ════════════ VISIBILITY API FOR PERFORMANCE ════════════ */
+(function() {
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      if (window.pauseAnimations) window.pauseAnimations();
+    } else {
+      if (window.resumeAnimations) window.resumeAnimations();
+    }
+  });
+})();
 </script>
 </body>
 </html>
