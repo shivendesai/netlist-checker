@@ -132,14 +132,13 @@
       align-items:center; justify-content:center; text-align:center;
       padding:calc(var(--nav-h) + 64px) 24px 96px; position:relative;
     }
-    #hero-canvas { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0; opacity:0.4; }
-    #s-hero > div, #s-hero > p, #s-hero > section { position:relative; z-index:1; }
     .hero-badge { display:inline-flex; align-items:center; gap:8px; font-size:11px; font-weight:500; color:var(--green); background:rgba(0,255,65,.05); border:1px solid var(--border); padding:4px 14px; margin-bottom:36px; letter-spacing:.4px; }
     .badge-dot { width:6px; height:6px; border-radius:50%; background:var(--green); animation:bPulse 2s ease-in-out infinite; box-shadow:0 0 5px var(--green); }
     @keyframes bPulse { 0%,100%{opacity:1} 50%{opacity:.25} }
 
     .hero-hl-wrap { display:inline-flex; align-items:flex-end; margin-bottom:28px; }
-    .hero-hl { font-size:clamp(26px,4.5vw,52px); font-weight:800; letter-spacing:-.5px; line-height:1.1; color:var(--text); }
+    .hero-hl { font-size:clamp(26px,4.5vw,52px); font-weight:800; letter-spacing:-.5px; line-height:1.1; color:var(--text); opacity:0; animation:fadeInHero .5s ease forwards; }
+    @keyframes fadeInHero { from{opacity:0} to{opacity:1} }
     .hero-cursor { color:var(--green); font-size:clamp(26px,4.5vw,52px); font-weight:300; animation:cursorBlink .9s step-end infinite; padding-left:2px; }
     @keyframes cursorBlink { 0%,100%{opacity:1} 50%{opacity:0} }
 
@@ -478,7 +477,6 @@
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.4/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.4/ScrollTrigger.min.js"></script>
 </head>
@@ -530,7 +528,6 @@
 <div class="page active" id="pg-home">
 
   <section id="s-hero">
-    <canvas id="hero-canvas"></canvas>
     <div class="hero-badge"><div class="badge-dot"></div>&gt; v1.0.0 &mdash; KiCad 6 &amp; 7</div>
     <div class="hero-hl-wrap">
       <h1 class="hero-hl" id="heroHl" aria-label="Catch PCB errors before they cost you."></h1><span class="hero-cursor" id="heroCursor">_</span>
@@ -1632,150 +1629,6 @@ function notifySubmit() {
   document.getElementById('nsuc').style.display = 'flex';
 }
 
-/* ── Three.js Hero Particle Background ── */
-let heroParticles = {
-  scene: null,
-  camera: null,
-  renderer: null,
-  particles: null,
-  lines: null,
-  icosahedron: null,
-  mouseX: 0,
-  mouseY: 0,
-  animationId: null,
-  baseCamZ: 50,
-
-  init: function() {
-    const canvas = document.getElementById('hero-canvas');
-    if (!canvas || !window.THREE) return;
-
-    if (this.renderer) this.renderer.dispose();
-    if (this.animationId) cancelAnimationFrame(this.animationId);
-
-    this.scene = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera(75, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
-    this.baseCamZ = 50;
-    this.camera.position.z = this.baseCamZ;
-
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-    this.renderer.setSize(canvas.clientWidth, canvas.clientHeight);
-    this.renderer.setClearColor(0x000000, 0);
-
-    // Create 3000 particles with varying sizes
-    const geom = new THREE.BufferGeometry();
-    const positions = [];
-    const colors = [];
-    const sizes = [];
-    for (let i = 0; i < 3000; i++) {
-      positions.push(
-        (Math.random() - 0.5) * 250,
-        (Math.random() - 0.5) * 250,
-        (Math.random() - 0.5) * 250
-      );
-      colors.push(0, 1, 0.25);
-      sizes.push(Math.random() > 0.5 ? 1 : 2);
-    }
-    geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(positions), 3));
-    geom.setAttribute('color', new THREE.BufferAttribute(new Float32Array(colors), 3));
-    geom.setAttribute('size', new THREE.BufferAttribute(new Float32Array(sizes), 1));
-
-    const mat = new THREE.PointsMaterial({
-      size: 1,
-      sizeAttenuation: true,
-      vertexColors: true,
-      transparent: true,
-      opacity: 0.6
-    });
-    this.particles = new THREE.Points(geom, mat);
-    this.scene.add(this.particles);
-
-    // Add connecting lines
-    this.createLines();
-
-    // Add wireframe icosahedron in center
-    const icoGeom = new THREE.IcosahedronGeometry(8, 4);
-    const icoMat = new THREE.LineBasicMaterial({ color: 0x00ff41, transparent: true, opacity: 0.3 });
-    const icoEdges = new THREE.EdgesGeometry(icoGeom);
-    this.icosahedron = new THREE.LineSegments(icoEdges, icoMat);
-    this.scene.add(this.icosahedron);
-
-    const self = this;
-    window.addEventListener('resize', () => self.onWindowResize(), { passive: true });
-    window.addEventListener('mousemove', (e) => self.onMouseMove(e), { passive: true });
-    document.addEventListener('visibilitychange', () => self.onVisibilityChange(), { passive: true });
-
-    this.animate();
-  },
-
-  createLines: function() {
-    const positions = this.particles.geometry.getAttribute('position').array;
-    const linePositions = [];
-    for (let i = 0; i < positions.length; i += 3) {
-      for (let j = i + 3; j < positions.length; j += 3) {
-        const dx = positions[i] - positions[j];
-        const dy = positions[i + 1] - positions[j + 1];
-        const dz = positions[i + 2] - positions[j + 2];
-        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-        if (dist < 150) {
-          linePositions.push(positions[i], positions[i + 1], positions[i + 2]);
-          linePositions.push(positions[j], positions[j + 1], positions[j + 2]);
-        }
-      }
-    }
-    const lineGeom = new THREE.BufferGeometry();
-    lineGeom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(linePositions), 3));
-    const lineMat = new THREE.LineBasicMaterial({ color: 0x00ff41, transparent: true, opacity: 0.15 });
-    this.lines = new THREE.LineSegments(lineGeom, lineMat);
-    this.scene.add(this.lines);
-  },
-
-  onMouseMove: function(e) {
-    const canvas = document.getElementById('hero-canvas');
-    this.mouseX = (e.clientX / canvas.clientWidth - 0.5) * 40;
-    this.mouseY = -(e.clientY / canvas.clientHeight - 0.5) * 40;
-  },
-
-  onWindowResize: function() {
-    const canvas = document.getElementById('hero-canvas');
-    const w = canvas.clientWidth;
-    const h = canvas.clientHeight;
-    this.camera.aspect = w / h;
-    this.camera.updateProjectionMatrix();
-    this.renderer.setSize(w, h);
-  },
-
-  onVisibilityChange: function() {
-    if (document.hidden) {
-      cancelAnimationFrame(this.animationId);
-    } else {
-      this.animate();
-    }
-  },
-
-  animate: function() {
-    const self = this;
-    if (!document.hidden) {
-      this.animationId = requestAnimationFrame(() => self.animate());
-      this.particles.rotation.y += 0.0001;
-      this.particles.rotation.x += 0.00005;
-
-      if (this.icosahedron) {
-        this.icosahedron.rotation.x += 0.0003;
-        this.icosahedron.rotation.y += 0.0005;
-      }
-
-      // Strong parallax on camera
-      this.camera.position.x += (this.mouseX - this.camera.position.x) * 0.05;
-      this.camera.position.y += (this.mouseY - this.camera.position.y) * 0.05;
-      this.camera.position.z = this.baseCamZ + Math.sin(Date.now() * 0.0001) * 2;
-      this.camera.lookAt(0, 0, 0);
-
-      this.renderer.render(this.scene, this.camera);
-    }
-  }
-};
-
-heroParticles.init();
 
 /* ── Scroll Animations with IntersectionObserver ── */
 const scrollAnimationObserver = new IntersectionObserver((entries) => {
@@ -1801,7 +1654,6 @@ window.go = function(id) {
         el.classList.remove('scroll-in');
         scrollAnimationObserver.observe(el);
       });
-      if (window.heroParticles) heroParticles.init();
     }, 50);
   }
 
@@ -2004,22 +1856,12 @@ if (window.gsap && window.ScrollTrigger) {
   });
 }
 
-// Hero animation on load
-window.addEventListener('load', () => {
-  const heroHl = document.getElementById('heroHl');
-  if (heroHl) {
-    const text = heroHl.getAttribute('aria-label') || '';
-    heroHl.textContent = '';
-    let index = 0;
-    const typeInterval = setInterval(() => {
-      if (index < text.length) {
-        heroHl.textContent += text[index++];
-      } else {
-        clearInterval(typeInterval);
-      }
-    }, 35);
-  }
-});
+// Hero headline display
+const heroHl = document.getElementById('heroHl');
+if (heroHl) {
+  const text = heroHl.getAttribute('aria-label') || 'Catch PCB errors before they cost you.';
+  heroHl.textContent = text;
+}
 </script>
 </body>
 </html>
