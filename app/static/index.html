@@ -129,26 +129,28 @@
 
     /* ════════════ HOME ════════════ */
     #s-hero {
-      min-height:100vh; display:flex; flex-direction:column;
+      min-height:400vh; display:flex; flex-direction:column;
       align-items:center; justify-content:center; text-align:center;
       padding:calc(var(--nav-h) + 64px) 24px 96px; position:relative;
-      overflow:hidden;
+      overflow:visible;
     }
 
     #pcb-canvas {
-      position:absolute; top:0; left:0;
-      width:100%; height:100%;
+      position:fixed; top:0; left:0;
+      width:100%; height:100vh;
       pointer-events:none; z-index:0;
     }
 
     .hero-overlay {
-      position:absolute; inset:0; z-index:1; pointer-events:none;
+      position:fixed; top:0; left:0; width:100%; height:100vh;
+      z-index:1; pointer-events:none;
       background:radial-gradient(ellipse at center, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.1) 70%);
     }
 
     #s-hero .hero-badge, #s-hero .hero-hl-wrap, #s-hero .hero-sub,
     #s-hero .hero-ctas, #s-hero .hmw, #s-hero .hproof {
-      position:relative; z-index:10;
+      position:sticky; top:50%; transform:translateY(-50%);
+      z-index:10; pointer-events:auto;
     }
     .hero-badge { display:inline-flex; align-items:center; gap:8px; font-size:11px; font-weight:500; color:var(--green); background:rgba(0,255,65,.05); border:1px solid var(--border); padding:4px 14px; margin-bottom:36px; letter-spacing:.4px; }
     .badge-dot { width:6px; height:6px; border-radius:50%; background:var(--green); animation:bPulse 2s ease-in-out infinite; box-shadow:0 0 5px var(--green); }
@@ -2105,11 +2107,17 @@ function initPCBCanvas() {
     ctx.beginPath();ctx.arc(x,y,5,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
   }
 
+  function getScrollProgress() {
+    const scrollTop = window.scrollY;
+    const maxScroll = document.body.scrollHeight - window.innerHeight;
+    return Math.min(scrollTop / (maxScroll * 0.8), 1);
+  }
+
   let last=0;
   function frame(ts) {
     if(!running)return;
     const dt=Math.min((ts-last)/1000,0.05);last=ts;
-    progress=Math.min(progress+dt*0.10,1);
+    progress=getScrollProgress();
     layout.traces.forEach((t,i)=>{
       const s=i/layout.traces.length*0.45,e=s+0.07;
       traceProgress[i]=Math.max(0,Math.min(1,(progress-s)/(e-s)));
@@ -2138,14 +2146,18 @@ function initPCBCanvas() {
 let pcbCleanup = null;
 const origShowPage = window.showPage;
 window.showPage = function(name) {
+  if(name!=='home') {
+    if(pcbCleanup){pcbCleanup();pcbCleanup=null;}
+    window.scrollTo(0,0);
+    document.getElementById('pcb-canvas').style.position='fixed';
+    document.querySelector('.hero-overlay').style.position='fixed';
+  }
   origShowPage && origShowPage(name);
   if(name==='home') {
     setTimeout(()=>{ if(pcbCleanup) pcbCleanup(); pcbCleanup=initPCBCanvas(); }, 50);
-  } else {
-    if(pcbCleanup){pcbCleanup();pcbCleanup=null;}
   }
 };
-pcbCleanup = initPCBCanvas();
+if(curPage==='home') pcbCleanup = initPCBCanvas();
 </script>
 </body>
 </html>
