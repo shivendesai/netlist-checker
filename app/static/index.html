@@ -422,6 +422,34 @@
     .contact-note { font-size:12px; color:var(--text3); }
     .pricing-soon { text-align:center; font-size:12px; color:var(--text3); margin-top:20px; letter-spacing:.3px; }
 
+    /* ════════════ SCROLL ANIMATIONS ════════════ */
+    @keyframes slideInLeft { from{opacity:0;transform:translateX(-30px)} to{opacity:1;transform:none} }
+    @keyframes slideUpFade { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:none} }
+    @keyframes scaleUp { from{opacity:0;transform:scale(0.9)} to{opacity:1;transform:scale(1)} }
+
+    .fc { opacity:0; }
+    .fc.scroll-in { animation:slideInLeft .6s ease forwards; }
+    .fc:nth-child(1).scroll-in { animation-delay:0ms; }
+    .fc:nth-child(2).scroll-in { animation-delay:100ms; }
+    .fc:nth-child(3).scroll-in { animation-delay:200ms; }
+    .fc:nth-child(4).scroll-in { animation-delay:300ms; }
+    .fc:nth-child(5).scroll-in { animation-delay:400ms; }
+    .fc:nth-child(6).scroll-in { animation-delay:500ms; }
+    .fc:nth-child(7).scroll-in { animation-delay:600ms; }
+    .fc:nth-child(8).scroll-in { animation-delay:700ms; }
+
+    .hiw-step { opacity:0; }
+    .hiw-step.scroll-in { animation:slideUpFade .6s ease forwards; }
+    .hiw-step:nth-child(1).scroll-in { animation-delay:0ms; }
+    .hiw-step:nth-child(2).scroll-in { animation-delay:100ms; }
+    .hiw-step:nth-child(3).scroll-in { animation-delay:200ms; }
+
+    .pcard { opacity:0; }
+    .pcard.scroll-in { animation:scaleUp .6s ease forwards; }
+    .pcard:nth-child(1).scroll-in { animation-delay:0ms; }
+    .pcard:nth-child(2).scroll-in { animation-delay:100ms; }
+    .pcard:nth-child(3).scroll-in { animation-delay:200ms; }
+
     /* ════════════ RESPONSIVE ════════════ */
     @media(max-width:960px) {
       .fgrid{grid-template-columns:repeat(2,1fr)}
@@ -1010,6 +1038,9 @@ function go(id) {
     next.querySelectorAll('.reveal').forEach(el => revObs.observe(el));
   }, 30);
 
+  if (id === 'home' && window.heroParticles) {
+    setTimeout(() => heroParticles.init(), 50);
+  }
   if (id === 'history') loadHistory();
 }
 
@@ -1590,24 +1621,30 @@ function notifySubmit() {
 }
 
 /* ── Three.js Hero Particle Background ── */
-(function() {
-  const canvas = document.getElementById('hero-canvas');
-  if (!canvas || !window.THREE) return;
+let heroParticles = {
+  scene: null,
+  camera: null,
+  renderer: null,
+  particles: null,
+  mouseX: 0,
+  mouseY: 0,
+  animationId: null,
 
-  let scene, camera, renderer, particles;
-  let mouseX = 0, mouseY = 0;
-  let animationId = null;
+  init: function() {
+    const canvas = document.getElementById('hero-canvas');
+    if (!canvas || !window.THREE) return;
 
-  function init() {
-    scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(75, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
-    camera.position.z = 50;
+    if (this.renderer) this.renderer.dispose();
+    if (this.animationId) cancelAnimationFrame(this.animationId);
 
-    renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-    renderer.setSize(canvas.clientWidth, canvas.clientHeight);
-    renderer.setClearColor(0x000000, 0);
+    this.scene = new THREE.Scene();
+    this.camera = new THREE.PerspectiveCamera(75, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
+    this.camera.position.z = 50;
 
-    // Create 1500 particles
+    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    this.renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+    this.renderer.setClearColor(0x000000, 0);
+
     const geom = new THREE.BufferGeometry();
     const positions = [];
     const colors = [];
@@ -1617,7 +1654,7 @@ function notifySubmit() {
         (Math.random() - 0.5) * 200,
         (Math.random() - 0.5) * 200
       );
-      colors.push(0, 1, 0.25); // #00ff41
+      colors.push(0, 1, 0.25);
     }
     geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(positions), 3));
     geom.setAttribute('color', new THREE.BufferAttribute(new Float32Array(colors), 3));
@@ -1629,57 +1666,90 @@ function notifySubmit() {
       transparent: true,
       opacity: 0.6
     });
-    particles = new THREE.Points(geom, mat);
-    scene.add(particles);
+    this.particles = new THREE.Points(geom, mat);
+    this.scene.add(this.particles);
 
-    window.addEventListener('resize', onWindowResize, { passive: true });
-    window.addEventListener('mousemove', onMouseMove, { passive: true });
-    document.addEventListener('visibilitychange', onVisibilityChange, { passive: true });
+    const self = this;
+    window.addEventListener('resize', () => self.onWindowResize(), { passive: true });
+    window.addEventListener('mousemove', (e) => self.onMouseMove(e), { passive: true });
+    document.addEventListener('visibilitychange', () => self.onVisibilityChange(), { passive: true });
 
-    animate();
-  }
+    this.animate();
+  },
 
-  function onMouseMove(e) {
-    mouseX = (e.clientX / canvas.clientWidth) * 2 - 1;
-    mouseY = -(e.clientY / canvas.clientHeight) * 2 + 1;
-  }
+  onMouseMove: function(e) {
+    const canvas = document.getElementById('hero-canvas');
+    this.mouseX = (e.clientX / canvas.clientWidth) * 2 - 1;
+    this.mouseY = -(e.clientY / canvas.clientHeight) * 2 + 1;
+  },
 
-  function onWindowResize() {
+  onWindowResize: function() {
+    const canvas = document.getElementById('hero-canvas');
     const w = canvas.clientWidth;
     const h = canvas.clientHeight;
-    camera.aspect = w / h;
-    camera.updateProjectionMatrix();
-    renderer.setSize(w, h);
-  }
+    this.camera.aspect = w / h;
+    this.camera.updateProjectionMatrix();
+    this.renderer.setSize(w, h);
+  },
 
-  function onVisibilityChange() {
+  onVisibilityChange: function() {
     if (document.hidden) {
-      cancelAnimationFrame(animationId);
+      cancelAnimationFrame(this.animationId);
     } else {
-      animate();
+      this.animate();
     }
-  }
+  },
 
-  function animate() {
+  animate: function() {
+    const self = this;
     if (!document.hidden) {
-      animationId = requestAnimationFrame(animate);
-      particles.rotation.y += 0.0002;
-      particles.rotation.x += 0.00008;
+      this.animationId = requestAnimationFrame(() => self.animate());
+      this.particles.rotation.y += 0.0002;
+      this.particles.rotation.x += 0.00008;
 
-      const pos = particles.geometry.getAttribute('position');
+      const pos = this.particles.geometry.getAttribute('position');
       const arr = pos.array;
       for (let i = 0; i < arr.length; i += 3) {
-        arr[i] += Math.sin(Date.now() * 0.0001 + i) * 0.05 + mouseX * 0.2;
-        arr[i + 1] += Math.cos(Date.now() * 0.0001 + i) * 0.05 + mouseY * 0.2;
+        arr[i] += Math.sin(Date.now() * 0.0001 + i) * 0.05 + this.mouseX * 0.2;
+        arr[i + 1] += Math.cos(Date.now() * 0.0001 + i) * 0.05 + this.mouseY * 0.2;
       }
       pos.needsUpdate = true;
 
-      renderer.render(scene, camera);
+      this.renderer.render(this.scene, this.camera);
     }
   }
+};
 
-  init();
-})();
+heroParticles.init();
+
+/* ── Scroll Animations with IntersectionObserver ── */
+const scrollAnimationObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('scroll-in');
+    } else {
+      entry.target.classList.remove('scroll-in');
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.fc, .hiw-step, .pcard').forEach(el => {
+  scrollAnimationObserver.observe(el);
+});
+
+// Re-observe elements when home page is shown to reset animations
+const origGo = window.go;
+window.go = function(id) {
+  if (id === 'home') {
+    setTimeout(() => {
+      document.querySelectorAll('.fc, .hiw-step, .pcard').forEach(el => {
+        el.classList.remove('scroll-in');
+        scrollAnimationObserver.observe(el);
+      });
+    }, 50);
+  }
+  origGo(id);
+};
 </script>
 </body>
 </html>
