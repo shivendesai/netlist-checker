@@ -1908,8 +1908,8 @@ function initPCBCanvas() {
   const wrap = canvas.parentElement;
 
   function resize() {
-    canvas.width = wrap.offsetWidth;
-    canvas.height = wrap.offsetHeight;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
   }
   resize();
   window.addEventListener('resize', resize);
@@ -1924,28 +1924,28 @@ function initPCBCanvas() {
 
   const layout = {
     traces: [
-      {x1:0.15,y1:0.3,x2:0.45,y2:0.3},{x1:0.45,y1:0.3,x2:0.45,y2:0.55},
-      {x1:0.45,y1:0.55,x2:0.75,y2:0.55},{x1:0.55,y1:0.3,x2:0.55,y2:0.2},
-      {x1:0.55,y1:0.2,x2:0.8,y2:0.2},{x1:0.75,y1:0.55,x2:0.75,y2:0.35},
-      {x1:0.75,y1:0.35,x2:0.85,y2:0.35},{x1:0.3,y1:0.3,x2:0.3,y2:0.7},
-      {x1:0.3,y1:0.7,x2:0.65,y2:0.7},{x1:0.65,y1:0.7,x2:0.65,y2:0.55},
-      {x1:0.15,y1:0.5,x2:0.25,y2:0.5},{x1:0.25,y1:0.5,x2:0.25,y2:0.65},
-      {x1:0.25,y1:0.65,x2:0.45,y2:0.65},{x1:0.8,y1:0.2,x2:0.8,y2:0.6},
-      {x1:0.8,y1:0.6,x2:0.65,y2:0.6}
+      {x1:0.08,y1:0.35,x2:0.30,y2:0.35},{x1:0.30,y1:0.35,x2:0.30,y2:0.50},
+      {x1:0.30,y1:0.50,x2:0.50,y2:0.50},{x1:0.50,y1:0.15,x2:0.50,y2:0.39},
+      {x1:0.50,y1:0.39,x2:0.70,y2:0.39},{x1:0.70,y1:0.39,x2:0.85,y2:0.20},
+      {x1:0.50,y1:0.61,x2:0.50,y2:0.80},{x1:0.50,y1:0.80,x2:0.80,y2:0.80},
+      {x1:0.80,y1:0.80,x2:0.85,y2:0.75},{x1:0.15,y1:0.50,x2:0.30,y2:0.50},
+      {x1:0.15,y1:0.75,x2:0.35,y2:0.75},{x1:0.35,y1:0.75,x2:0.35,y2:0.80},
+      {x1:0.35,y1:0.80,x2:0.50,y2:0.80},{x1:0.85,y1:0.50,x2:0.92,y2:0.50},
+      {x1:0.85,y1:0.75,x2:0.92,y2:0.60}
     ],
     components: [
-      {id:'U1',type:'ic',rx:0.47,ry:0.45,rw:0.18,rh:0.20,label:'U1',sublabel:'STM32F103',pins:14,color:IC_BODY,dir:'left'},
-      {id:'C1',type:'cap',rx:0.22,ry:0.27,rw:0.04,rh:0.06,label:'C1',color:CAP_COLOR,dir:'top'},
-      {id:'C2',type:'cap',rx:0.28,ry:0.44,rw:0.04,rh:0.06,label:'C2',color:CAP_COLOR,dir:'top'},
-      {id:'C3',type:'cap',rx:0.60,ry:0.62,rw:0.04,rh:0.06,label:'C3',color:CAP_COLOR,dir:'bottom'},
-      {id:'R1',type:'res',rx:0.73,ry:0.28,rw:0.07,rh:0.03,label:'R1',color:RES_COLOR,dir:'right'},
-      {id:'R2',type:'res',rx:0.73,ry:0.38,rw:0.07,rh:0.03,label:'R2',color:RES_COLOR,dir:'right'},
-      {id:'R3',type:'res',rx:0.73,ry:0.48,rw:0.07,rh:0.03,label:'R3',color:RES_COLOR,dir:'right'},
-      {id:'Y1',type:'xtal',rx:0.63,ry:0.18,rw:0.09,rh:0.05,label:'Y1',color:'#888',dir:'top'},
-      {id:'J1',type:'conn',rx:0.09,ry:0.45,rw:0.05,rh:0.18,label:'J1',color:'#555',dir:'left'},
-      {id:'D1',type:'led',rx:0.82,ry:0.32,rw:0.018,label:'D1',color:'#00ff41',dir:'right'},
-      {id:'D2',type:'led',rx:0.82,ry:0.42,rw:0.018,label:'D2',color:'#ff4141',dir:'right'},
-      {id:'U2',type:'sot',rx:0.20,ry:0.62,rw:0.06,rh:0.04,label:'U2',color:'#1a1a2e',dir:'bottom'}
+      {id:'U1',type:'ic',rx:0.50,ry:0.50,rw:0.14,rh:0.22,label:'U1',sublabel:'STM32F103',pins:14,color:IC_BODY,dir:'left'},
+      {id:'C1',type:'cap',rx:0.15,ry:0.15,rw:0.04,rh:0.06,label:'C1',color:CAP_COLOR,dir:'top'},
+      {id:'C2',type:'cap',rx:0.85,ry:0.20,rw:0.04,rh:0.06,label:'C2',color:CAP_COLOR,dir:'top'},
+      {id:'C3',type:'cap',rx:0.80,ry:0.80,rw:0.04,rh:0.06,label:'C3',color:CAP_COLOR,dir:'bottom'},
+      {id:'R1',type:'res',rx:0.15,ry:0.50,rw:0.07,rh:0.03,label:'R1',color:RES_COLOR,dir:'right'},
+      {id:'R2',type:'res',rx:0.15,ry:0.75,rw:0.07,rh:0.03,label:'R2',color:RES_COLOR,dir:'right'},
+      {id:'R3',type:'res',rx:0.85,ry:0.50,rw:0.07,rh:0.03,label:'R3',color:RES_COLOR,dir:'right'},
+      {id:'Y1',type:'xtal',rx:0.85,ry:0.75,rw:0.09,rh:0.05,label:'Y1',color:'#888',dir:'top'},
+      {id:'J1',type:'conn',rx:0.08,ry:0.35,rw:0.05,rh:0.18,label:'J1',color:'#555',dir:'left'},
+      {id:'D1',type:'led',rx:0.92,ry:0.15,rw:0.018,label:'D1',color:'#00ff41',dir:'right'},
+      {id:'D2',type:'led',rx:0.92,ry:0.60,rw:0.018,label:'D2',color:'#ff4141',dir:'right'},
+      {id:'U2',type:'sot',rx:0.50,ry:0.20,rw:0.06,rh:0.04,label:'U2',color:'#1a1a2e',dir:'bottom'}
     ]
   };
 
@@ -2014,10 +2014,10 @@ function initPCBCanvas() {
       ctx.fillRect(x+bw/2-1,py2-1.5,9,3);
     }
     ctx.fillStyle=GREEN;ctx.beginPath();ctx.arc(x-bw/2+6,y-bh/2+6,3,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='rgba(0,255,65,0.95)';ctx.font=`bold ${Math.max(9,bw*0.13)}px 'Courier New'`;
-    ctx.textAlign='center';ctx.fillText(c.label,x,y-8);
-    ctx.font=`${Math.max(7,bw*0.09)}px 'Courier New'`;ctx.fillStyle='rgba(0,255,65,0.6)';
-    ctx.fillText(c.sublabel||'',x,y+8);ctx.globalAlpha=1;
+    ctx.fillStyle='rgba(0,255,65,0.95)';ctx.font=`bold ${Math.max(11,bw*0.16)}px 'Courier New'`;
+    ctx.textAlign='center';ctx.fillText(c.label,x,y-10);
+    ctx.font=`${Math.max(8,bw*0.11)}px 'Courier New'`;ctx.fillStyle='rgba(0,255,65,0.6)';
+    ctx.fillText(c.sublabel||'',x,y+10);ctx.globalAlpha=1;
   }
 
   function drawCap(c,ox,oy,alpha) {
