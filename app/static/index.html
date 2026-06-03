@@ -34,10 +34,13 @@
 
     html { scroll-behavior: smooth; }
     body {
-      background: var(--bg); color: var(--text);
+      background: #050e05; color: var(--text);
       font-family: 'JetBrains Mono', 'Courier New', monospace;
       font-size: 14px; line-height: 1.6; overflow-x: hidden;
       -webkit-font-smoothing: antialiased;
+    }
+    .page-section {
+      background: transparent;
     }
     ::selection { background: rgba(0,255,65,0.22); color: var(--green); }
     a { color: inherit; }
@@ -111,10 +114,9 @@
     .nav-mobile a:last-of-type { border:none; }
 
     /* ── Pages ── */
-    .page { display:none; position:relative; z-index:1; background:#050e05; }
+    .page { display:none; position:relative; z-index:1; }
     .page.active { display:block; animation:pgIn .18s ease both; }
     @keyframes pgIn { from{opacity:0} to{opacity:1} }
-    #pg-home { background:transparent; }
 
     /* ── Layout ── */
     .container { max-width:1200px; margin:0 auto; padding:0 24px; }
@@ -515,10 +517,15 @@
 </head>
 <body>
 
+<!-- PCB Canvas - fixed position, z-index 0 -->
+<canvas id="pcb-canvas" style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:0;pointer-events:none;display:none;"></canvas>
+<div id="pcb-overlay" style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:1;pointer-events:none;background:rgba(0,0,0,0.45);display:none;"></div>
+
+<!-- Dot grid background for non-home pages -->
+<canvas id="dot-grid" style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:0;pointer-events:none;"></canvas>
+
+<!-- Other fixed elements -->
 <canvas id="circuit-bg" aria-hidden="true"></canvas>
-<!-- PCB Canvas and Overlay - always in DOM, at body level -->
-<canvas id="pcb-canvas" aria-hidden="true"></canvas>
-<div id="pcb-overlay" aria-hidden="true"></div>
 <!-- Page transition overlay -->
 <div id="page-transition" aria-hidden="true"></div>
 <div class="scanlines" aria-hidden="true"></div>
@@ -562,7 +569,7 @@
 <!-- ══════════════════════════════════════
      PAGE: HOME
 ══════════════════════════════════════ -->
-<div class="page active" id="pg-home">
+<div class="page-section active" id="pg-home">
 
   <section id="s-hero">
     <div class="hero-badge"><div class="badge-dot"></div>&gt; v1.0.0 &mdash; KiCad 6 &amp; 7</div>
@@ -662,7 +669,7 @@
 <!-- ══════════════════════════════════════
      PAGE: CHECKER
 ══════════════════════════════════════ -->
-<div class="page" id="pg-checker">
+<div class="page-section" id="pg-checker">
   <div class="tool-wrap">
     <div class="tool-hdr">
       <div class="eyebrow">tool</div>
@@ -743,7 +750,7 @@
 <!-- ══════════════════════════════════════
      PAGE: PRICING
 ══════════════════════════════════════ -->
-<div class="page" id="pg-pricing">
+<div class="page-section" id="pg-pricing">
   <div class="pricing-wrap">
     <div class="phdr reveal">
       <div class="eyebrow">pricing</div>
@@ -827,7 +834,7 @@
 <!-- ══════════════════════════════════════
      PAGE: DOCS
 ══════════════════════════════════════ -->
-<div class="page" id="pg-docs">
+<div class="page-section" id="pg-docs">
   <div class="docs-wrap">
     <div class="dhdr reveal">
       <div class="eyebrow">documentation</div>
@@ -914,7 +921,7 @@
 <!-- ══════════════════════════════════════
      PAGE: AUTH
 ══════════════════════════════════════ -->
-<div class="page" id="pg-auth">
+<div class="page-section" id="pg-auth">
   <div class="auth-wrap">
     <div class="auth-card">
       <div class="auth-tabs">
@@ -976,7 +983,7 @@
 <!-- ══════════════════════════════════════
      PAGE: HISTORY
 ══════════════════════════════════════ -->
-<div class="page" id="pg-history">
+<div class="page-section" id="pg-history">
   <div class="history-wrap">
     <div class="history-hdr">
       <div class="eyebrow">history</div>
@@ -1016,7 +1023,7 @@
 <!-- ══════════════════════════════════════
      PAGE: CONTACT
 ══════════════════════════════════════ -->
-<div class="page" id="pg-contact">
+<div class="page-section" id="pg-contact">
   <div class="contact-wrap">
     <div class="contact-card">
       <div class="eyebrow">contact</div>
@@ -1062,46 +1069,36 @@ function go(id) {
 
   if (id === curPage) { window.scrollTo({top:0,behavior:'smooth'}); return; }
 
-  // Hide all page sections
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  showPage(id);
 
-  const next = document.getElementById('pg-' + id);
-  if (!next) return;
+  if (id === 'history') loadHistory();
+}
 
-  // Show the requested page
-  next.classList.add('active');
-  curPage = id;
+function showPage(name) {
+  // Hide all pages
+  document.querySelectorAll('.page-section').forEach(p => p.style.display = 'none');
 
-  // Handle PCB canvas visibility and body background
+  // Show requested page
+  const page = document.getElementById('pg-' + name);
+  if (!page) return;
+  page.style.display = 'block';
+
+  curPage = name;
+
+  // PCB canvas control
   const pcbCanvas = document.getElementById('pcb-canvas');
   const pcbOverlay = document.getElementById('pcb-overlay');
 
-  if (id === 'home') {
-    // Show PCB canvas and reset/restart animation
+  if (name === 'home') {
     pcbCanvas.style.display = 'block';
     pcbOverlay.style.display = 'block';
-    document.body.style.background = 'transparent';
-
-    // Reset animation state and restart
-    resetPCBAnimation();
-    setTimeout(() => {
-      if (pcbCleanup) pcbCleanup();
-      pcbCleanup = initPCBCanvas();
-    }, 50);
+    startPCB();
   } else {
-    // Hide PCB canvas for all other pages
     pcbCanvas.style.display = 'none';
     pcbOverlay.style.display = 'none';
-    document.body.style.background = '#050e05';
-
-    // Stop PCB animation
-    if (pcbCleanup) {
-      pcbCleanup();
-      pcbCleanup = null;
-    }
   }
 
-  // Flash transition effect
+  // Flash transition
   const flash = document.getElementById('pg-flash');
   flash.classList.remove('flash');
   void flash.offsetWidth;
@@ -1109,16 +1106,16 @@ function go(id) {
 
   window.scrollTo(0, 0);
 
+  // Update nav active state
   document.querySelectorAll('.nav-links a[data-page]').forEach(a => {
-    a.classList.toggle('nav-act', a.dataset.page === id);
+    a.classList.toggle('nav-act', a.dataset.page === name);
   });
 
-  next.querySelectorAll('.reveal').forEach(el => el.classList.remove('in'));
+  // Scroll reveal animations
+  page.querySelectorAll('.reveal').forEach(el => el.classList.remove('in'));
   setTimeout(() => {
-    next.querySelectorAll('.reveal').forEach(el => revObs.observe(el));
+    page.querySelectorAll('.reveal').forEach(el => revObs.observe(el));
   }, 30);
-
-  if (id === 'history') loadHistory();
 }
 
 /* ── Nav scroll + hamburger ── */
@@ -1851,7 +1848,7 @@ if (window.gsap && window.ScrollTrigger) {
 
   // Initialize PCB Canvas on home page
   if (curPage === 'home') {
-    initPCBCanvas();
+    startPCB();
   }
 
   // Animate eight checks cards with fly-in from top/bottom
@@ -1951,11 +1948,11 @@ function resetPCBAnimation() {
   pcbAnimationState.signalT = 0;
   pcbAnimationState.solderFlashes = [];
 
-  // Will be reinitialized in initPCBCanvas
+  // Will be reinitialized in startPCB
   window.scrollTo(0, 0);
 }
 
-function initPCBCanvas() {
+function startPCB() {
   const canvas = document.getElementById('pcb-canvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
@@ -2003,8 +2000,9 @@ function initPCBCanvas() {
     ]
   };
 
-  let targetProgress = pcbAnimationState.targetProgress;
-  let progress = pcbAnimationState.progress;
+  // Reset state to zero
+  let targetProgress = 0;
+  let progress = 0;
   let traceProgress = layout.traces.map(() => 0);
   let compProgress = layout.components.map(() => 0);
   let solderFlashes = [];
@@ -2012,8 +2010,13 @@ function initPCBCanvas() {
   let running = true;
 
   // Update global state references
+  pcbAnimationState.targetProgress = targetProgress;
+  pcbAnimationState.progress = progress;
   pcbAnimationState.traceProgress = traceProgress;
   pcbAnimationState.compProgress = compProgress;
+  pcbAnimationState.solderFlashes = solderFlashes;
+  pcbAnimationState.signalT = signalT;
+  pcbAnimationState.running = running;
 
   const dirOffsets = {left:[-1.5,0],right:[1.5,0],top:[0,-1.5],bottom:[0,1.5]};
 
@@ -2215,14 +2218,41 @@ function initPCBCanvas() {
 
 let pcbCleanup = null;
 
-// Initialize PCB on home page if we're already there
-if(curPage==='home') {
-  const pcbCanvas = document.getElementById('pcb-canvas');
-  const pcbOverlay = document.getElementById('pcb-overlay');
-  pcbCanvas.style.display = 'block';
-  pcbOverlay.style.display = 'block';
-  pcbCleanup = initPCBCanvas();
-}
+// Initialize dot grid background (static, drawn once)
+(function initDotGrid() {
+  const canvas = document.getElementById('dot-grid');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    // Redraw grid after resize
+    ctx.fillStyle = '#050e05';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = 'rgba(0,255,65,0.06)';
+    for (let x = 20; x < canvas.width; x += 20) {
+      for (let y = 20; y < canvas.height; y += 20) {
+        ctx.beginPath();
+        ctx.arc(x, y, 0.8, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+
+  resize();
+  window.addEventListener('resize', resize, { passive: true });
+})();
+
+// Initialize page on load
+document.addEventListener('DOMContentLoaded', () => {
+  showPage(currentPage || 'home');
+}, { passive: true });
+
+// Also call on script load (for immediate init)
+window.addEventListener('load', () => {
+  showPage(curPage);
+}, { passive: true });
 </script>
 </body>
 </html>
