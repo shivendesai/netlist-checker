@@ -2,7 +2,8 @@ import dataclasses
 import os
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, UploadFile, File, Header
+from fastapi import APIRouter, HTTPException, UploadFile, File, Header, Request
+from pydantic import BaseModel
 
 from app.core.checker import run_checks
 from app.core.parser import parse
@@ -44,30 +45,75 @@ def _save_history(token: str, filename: str, report, results: list) -> None:
         pass  # Never fail the check because of a history write error
 
 
+class NetlistPayload(BaseModel):
+    netlist: Optional[str] = None
+    components: Optional[list] = None
+    nets: Optional[list] = None
+
+
 @router.post("/check")
 async def check_netlist(
-    file: UploadFile = File(...),
+    request: Request,
+    file: Optional[UploadFile] = File(None),
     authorization: Optional[str] = Header(None),
 ):
-    if not file.filename.endswith(".net"):
-        raise HTTPException(status_code=400, detail="Only .net files are accepted")
+    source_file = "unknown"
+    netlist = None
 
-    content = await file.read()
-    try:
-        text = content.decode("utf-8")
-    except UnicodeDecodeError:
-        raise HTTPException(status_code=400, detail="File must be UTF-8 encoded")
+    # Check if it's JSON payload
+    content_type = request.headers.get("content-type", "")
+    if "application/json" in content_type:
+        try:
+            body = await request.json()
+            payload = NetlistPayload(**body)
 
-    try:
-        netlist = parse(text)
-    except Exception as exc:
-        raise HTTPException(status_code=422, detail=f"Parse error: {exc}")
+            if payload.netlist:
+                # JSON with netlist text
+                try:
+                    netlist = parse(payload.netlist)
+                except Exception as exc:
+                    raise HTTPException(status_code=422, detail=f"Parse error: {exc}")
+                source_file = "schematic.net"
+            elif payload.components is not None and payload.nets is not None:
+                # JSON with pre-parsed components and nets
+                from app.core.parser import Component, Net, Pin, Netlist as NetlistClass
+                components = [Component(ref=c["ref"], value=c["value"], footprint=c.get("footprint", "")) for c in payload.components]
+                nets = []
+                for n in payload.nets:
+                    pins = [Pin(ref=p["ref"], number=p["number"]) for p in n.get("pins", [])]
+                    nets.append(Net(code=n.get("code", "0"), name=n["name"], pins=pins))
+                netlist = NetlistClass(components=components, nets=nets)
+                source_file = "schematic.json"
+            else:
+                raise HTTPException(status_code=400, detail="JSON payload must include 'netlist' or both 'components' and 'nets'")
+        except HTTPException:
+            raise
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=f"Invalid JSON payload: {exc}")
+    elif file:
+        # Multipart file upload (original behavior)
+        if not file.filename.endswith(".net"):
+            raise HTTPException(status_code=400, detail="Only .net files are accepted")
 
-    report = run_checks(netlist, source_file=file.filename)
+        content = await file.read()
+        try:
+            text = content.decode("utf-8")
+        except UnicodeDecodeError:
+            raise HTTPException(status_code=400, detail="File must be UTF-8 encoded")
+
+        try:
+            netlist = parse(text)
+        except Exception as exc:
+            raise HTTPException(status_code=422, detail=f"Parse error: {exc}")
+        source_file = file.filename
+    else:
+        raise HTTPException(status_code=400, detail="Must provide either JSON body or file upload")
+
+    report = run_checks(netlist, source_file=source_file)
     result_dict = _report_to_dict(report)
 
     if authorization and authorization.startswith("Bearer "):
         token = authorization.split(" ", 1)[1]
-        _save_history(token, file.filename, report, result_dict["results"])
+        _save_history(token, source_file, report, result_dict["results"])
 
     return result_dict
