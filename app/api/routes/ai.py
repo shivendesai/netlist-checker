@@ -7,18 +7,20 @@ from pydantic import BaseModel
 
 router = APIRouter(prefix="/ai")
 
-_SYSTEM_PROMPT = (
-    "You are an expert PCB and electronics engineer assistant embedded in a netlist checker tool. "
-    "The user has just run automated checks on their KiCad netlist. You have full context of their "
-    "design and check results. Be specific, practical, and concise. Reference their actual component "
-    "names, net names, and specific errors when answering. Help them understand and fix issues in "
-    "their schematic."
+_SYSTEM_PROMPT_TEMPLATE = (
+    "You are an expert PCB and electronics engineer assistant embedded in a KiCad schematic checker plugin. "
+    "The engineer is currently working on a schematic. You have real-time access to their design. "
+    "Current components in schematic: {comp_list}\n"
+    "Last check results are also provided for context.\n"
+    "Be specific, practical, and concise. Reference their actual component names when answering. "
+    "Help them understand and fix issues in their schematic."
 )
 
 
 class _Context(BaseModel):
     source_file: str = ""
-    results: list[dict[str, Any]] = []
+    current_components: list[dict[str, Any]] = []
+    last_save_results: list[dict[str, Any]] = []
 
 
 class ChatRequest(BaseModel):
@@ -32,6 +34,11 @@ async def ai_chat(req: ChatRequest):
     if not api_key:
         raise HTTPException(status_code=503, detail="AI assistant not configured (no API key)")
 
+    # Build system prompt with current component context
+    components = req.context.current_components or []
+    comp_list = ', '.join([f"{c['ref']} ({c['value']})" for c in components]) if components else 'none'
+    system_prompt = _SYSTEM_PROMPT_TEMPLATE.format(comp_list=comp_list)
+
     user_content = _build_user_message(req.message, req.context)
 
     async with httpx.AsyncClient(timeout=30) as client:
@@ -42,7 +49,7 @@ async def ai_chat(req: ChatRequest):
                 json={
                     "model": "llama-3.3-70b-versatile",
                     "messages": [
-                        {"role": "system", "content": _SYSTEM_PROMPT},
+                        {"role": "system", "content": system_prompt},
                         {"role": "user", "content": user_content},
                     ],
                 },
@@ -57,20 +64,21 @@ async def ai_chat(req: ChatRequest):
 
 
 def _build_user_message(message: str, ctx: _Context) -> str:
-    lines = [f"Netlist file: {ctx.source_file or 'unknown'}"]
-    if ctx.results:
-        passed = sum(1 for r in ctx.results if r.get("passed"))
-        lines.append(f"Checks: {len(ctx.results)} total, {passed} passed\n")
-        lines.append("Results:")
-        for r in ctx.results:
+    lines = [f"Schematic file: {ctx.source_file or 'unknown'}"]
+
+    if ctx.current_components:
+        comp_list = ', '.join([f"{c['ref']} ({c['value']})" for c in ctx.current_components])
+        lines.append(f"Components placed: {comp_list}")
+
+    if ctx.last_save_results:
+        passed = sum(1 for r in ctx.last_save_results if r.get("passed"))
+        lines.append(f"\nLast check results: {len(ctx.last_save_results)} total, {passed} passed")
+        for r in ctx.last_save_results:
             status = "PASS" if r.get("passed") else r.get("severity", "?").upper()
             line = f"  [{status}] {r.get('check_id', '')}: {r.get('message', '')}"
-            if r.get("component"):
-                line += f" (component: {r['component']})"
-            if r.get("net"):
-                line += f" (net: {r['net']})"
             if not r.get("passed") and r.get("suggestion"):
-                line += f"\n    Fix: {r['suggestion']}"
+                line += f" → {r['suggestion']}"
             lines.append(line)
-    lines.append(f"\nUser question: {message}")
+
+    lines.append(f"\nQuestion: {message}")
     return "\n".join(lines)
